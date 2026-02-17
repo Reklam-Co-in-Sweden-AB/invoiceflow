@@ -45,6 +45,10 @@ function effectivePrice(p) {
   if (p.billingSplits && p.billingSplits.length > 0) {
     return p.billingSplits.reduce((s, sp) => s + sp.amount, 0);
   }
+  // Invoice rows replace the main row
+  if (p.invoiceRows && p.invoiceRows.length > 0) {
+    return p.invoiceRows.reduce((s, r) => s + (r.unitPrice || 0) * (r.quantity || 1), 0);
+  }
   const multiplier = INTERVAL_MULTIPLIER[p.billingInterval] || 1;
   return (p.monthlyPrice || 0) * multiplier;
 }
@@ -86,15 +90,24 @@ function isInvoicedForMonth(project, monthStart) {
 }
 
 /**
- * Check if a project is due for invoicing this month.
- * If nextInvoiceMonth is set, the project is only due when currentMonth >= nextInvoiceMonth.
+ * Check if a project is due for invoicing in a given month.
+ * If nextInvoiceMonth is set, the project is only due when viewMonth >= nextInvoiceMonth
+ * AND the month aligns with the billing interval cycle.
  * If not set, it's always due (backwards compatible).
  */
-function isDueThisMonth(project, monthStart) {
+function isDueForMonth(project, monthStart) {
   if (!project.nextInvoiceMonth) return true; // no schedule set = always due
   const next = new Date(project.nextInvoiceMonth);
-  return next.getFullYear() < monthStart.getFullYear() ||
-    (next.getFullYear() === monthStart.getFullYear() && next.getMonth() <= monthStart.getMonth());
+  const nextY = next.getFullYear(), nextM = next.getMonth();
+  const viewY = monthStart.getFullYear(), viewM = monthStart.getMonth();
+
+  // Not yet reached the first invoice month
+  if (viewY < nextY || (viewY === nextY && viewM < nextM)) return false;
+
+  // Check if this month aligns with the billing cycle
+  const intMonths = INTERVAL_MULTIPLIER[project.billingInterval] || 1;
+  const diff = (viewY - nextY) * 12 + (viewM - nextM);
+  return diff % intMonths === 0;
 }
 
 /**
@@ -109,22 +122,31 @@ router.get('/', async (req, res) => {
   const showCompleted = req.query.completed === '1';
   const weekFilter = req.query.week ? parseInt(req.query.week) : null; // 1-4 or null for all
 
+  // Month navigation: ?month=2026-04
+  const now = new Date();
+  let viewMonth;
+  if (req.query.month) {
+    const [y, m] = req.query.month.split('-').map(Number);
+    viewMonth = new Date(y, m - 1, 1);
+  } else {
+    viewMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  const isCurrentMonth = viewMonth.getFullYear() === now.getFullYear() && viewMonth.getMonth() === now.getMonth();
+
   const projects = await prisma.project.findMany({
     where: showCompleted ? {} : { isCompleted: false },
-    include: { customer: true, billingSplits: true },
+    include: { customer: true, billingSplits: true, invoiceRows: true },
     orderBy: { title: 'asc' },
   });
 
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const activeWeek = currentWeekOfMonth();
+  const activeWeek = isCurrentMonth ? currentWeekOfMonth() : null;
 
   // Mark invoiced, paused, and due status on each project
   for (const p of projects) {
-    p._invoicedThisMonth = isInvoicedForMonth(p, monthStart);
+    p._invoicedThisMonth = isInvoicedForMonth(p, viewMonth);
     p._isPaused = p.pauseFrom && p.pauseUntil &&
       new Date(p.pauseFrom) <= now && new Date(p.pauseUntil) >= now;
-    p._isDue = isDueThisMonth(p, monthStart);
+    p._isDue = isDueForMonth(p, viewMonth);
   }
 
   // Filter by week if requested
@@ -177,6 +199,13 @@ router.get('/', async (req, res) => {
   const customers = await prisma.customer.findMany({ orderBy: { name: 'asc' } });
   const articles = await prisma.article.findMany({ orderBy: { articleNumber: 'asc' } });
 
+  // Month navigation data
+  const monthNames = ['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december'];
+  const prevMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1);
+  const nextMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1);
+  const viewMonthLabel = monthNames[viewMonth.getMonth()] + ' ' + viewMonth.getFullYear();
+  const viewMonthKey = viewMonth.toISOString().slice(0, 7); // "2026-02"
+
   res.render('projects', {
     projects: filtered,
     allProjects: projects,
@@ -188,6 +217,12 @@ router.get('/', async (req, res) => {
     showCompleted,
     weekFilter,
     activeWeek,
+    isCurrentMonth,
+    viewMonth,
+    viewMonthLabel,
+    viewMonthKey,
+    prevMonthKey: prevMonth.toISOString().slice(0, 7),
+    nextMonthKey: nextMonth.toISOString().slice(0, 7),
     customers,
     articles,
     pageTitle: 'Projekt',
