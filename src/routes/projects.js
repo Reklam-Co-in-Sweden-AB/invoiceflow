@@ -150,8 +150,19 @@ router.get('/', async (req, res) => {
     if (sections[key]) orderedSections[key] = sections[key];
   }
 
-  // Week suggestion for projects with prices
+  // Auto-assign weeks for projects without one
   const { suggestions, weekTotals } = suggestWeeks(projects);
+  const toAssign = Object.entries(suggestions);
+  if (toAssign.length > 0) {
+    await Promise.all(toAssign.map(([id, week]) =>
+      prisma.project.update({ where: { id: Number(id) }, data: { invoiceWeek: week } })
+    ));
+    // Apply to in-memory objects too
+    for (const [id, week] of toAssign) {
+      const p = projects.find(pr => pr.id === Number(id));
+      if (p) p.invoiceWeek = week;
+    }
+  }
 
   // Count per week for tab badges (only due projects)
   const weekCounts = [0, 0, 0, 0];
