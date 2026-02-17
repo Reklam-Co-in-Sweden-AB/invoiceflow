@@ -283,7 +283,7 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
 
           await prisma.project.update({
             where: { id: project.id },
-            data: { lastInvoicedMonth: monthStart },
+            data: { lastInvoicedMonth: monthStart, nextInvoiceMonth: calcNextInvoiceMonth(monthStart, project.billingInterval) },
           });
 
           results.push({ id: project.id, title: project.title, success: true, price: totalAmount, draftId: draft.id || draft.Id });
@@ -359,7 +359,7 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
           if (allOk) {
             await prisma.project.update({
               where: { id: project.id },
-              data: { lastInvoicedMonth: monthStart },
+              data: { lastInvoicedMonth: monthStart, nextInvoiceMonth: calcNextInvoiceMonth(monthStart, project.billingInterval) },
             });
           }
 
@@ -668,6 +668,7 @@ router.patch('/projects/:id/settings', async (req, res) => {
   if (req.body.invoiceWeek !== undefined) data.invoiceWeek = parseInt(req.body.invoiceWeek) || null;
   if (req.body.articleId !== undefined) data.articleId = parseInt(req.body.articleId) || null;
   if (req.body.endDate !== undefined) data.endDate = req.body.endDate ? new Date(req.body.endDate) : null;
+  if (req.body.nextInvoiceMonth !== undefined) data.nextInvoiceMonth = req.body.nextInvoiceMonth ? new Date(req.body.nextInvoiceMonth + '-01') : null;
 
   const project = await prisma.project.update({
     where: { id: Number(req.params.id) },
@@ -806,7 +807,7 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
 
       await prisma.project.update({
         where: { id: project.id },
-        data: { lastInvoicedMonth: monthStart },
+        data: { lastInvoicedMonth: monthStart, nextInvoiceMonth: calcNextInvoiceMonth(monthStart, project.billingInterval) },
       });
 
       res.json({
@@ -875,7 +876,7 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
       if (allOk) {
         await prisma.project.update({
           where: { id: project.id },
-          data: { lastInvoicedMonth: monthStart },
+          data: { lastInvoicedMonth: monthStart, nextInvoiceMonth: calcNextInvoiceMonth(monthStart, project.billingInterval) },
         });
       }
 
@@ -896,6 +897,14 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
 });
 
 function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+
+const INTERVAL_MONTHS = { monthly: 1, quarterly: 3, semi_annual: 6, annual: 12 };
+function calcNextInvoiceMonth(currentMonth, billingInterval) {
+  const months = INTERVAL_MONTHS[billingInterval] || 1;
+  const next = new Date(currentMonth);
+  next.setMonth(next.getMonth() + months);
+  return new Date(next.getFullYear(), next.getMonth(), 1);
+}
 
 // Trigger Blikk contact sync
 router.post('/sync/contacts', async (req, res) => {

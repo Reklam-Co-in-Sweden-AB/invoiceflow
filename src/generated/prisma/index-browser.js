@@ -254,6 +254,7 @@ exports.Prisma.ProjectScalarFieldEnum = {
   ourReference: 'ourReference',
   buyersOrderRef: 'buyersOrderRef',
   invoiceText: 'invoiceText',
+  nextInvoiceMonth: 'nextInvoiceMonth',
   blikkUpdatedAt: 'blikkUpdatedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

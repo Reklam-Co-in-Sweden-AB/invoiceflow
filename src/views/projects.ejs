@@ -113,7 +113,8 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
   <!-- Sections -->
   <% Object.entries(sections).forEach(([name, section]) => { %>
     <%
-      const nonInvoiced = section.projects.filter(p => !p._invoicedThisMonth && !p._isPaused);
+      const nonInvoiced = section.projects.filter(p => !p._invoicedThisMonth && !p._isPaused && p._isDue);
+      const notDue = section.projects.filter(p => !p._invoicedThisMonth && !p._isPaused && !p._isDue);
       const paused = section.projects.filter(p => p._isPaused && !p._invoicedThisMonth);
       const invoiced = section.projects.filter(p => p._invoicedThisMonth);
     %>
@@ -132,6 +133,7 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
           <div class="text-sm font-bold text-gray-900"><%= name %></div>
           <div class="text-[11px] text-gray-400">
             <%= nonInvoiced.length %> att fakturera
+            <% if (notDue.length > 0) { %> &middot; <%= notDue.length %> ej aktuella<% } %>
             <% if (paused.length > 0) { %> &middot; <%= paused.length %> pausade<% } %>
             <% if (invoiced.length > 0) { %> &middot; <%= invoiced.length %> fakturerade<% } %>
           </div>
@@ -270,6 +272,30 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
                 </td>
                 <td class="text-center">
                   <span class="text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Pausad</span>
+                </td>
+              </tr>
+            <% }) %>
+
+            <!-- Not due projects (dimmed, future billing) -->
+            <% notDue.forEach(proj => { %>
+              <tr class="opacity-40 border-b border-gray-50">
+                <td class="w-8 px-2"></td>
+                <td>
+                  <a href="/projects/<%= proj.id %>" class="block hover:text-blue-600 transition-colors">
+                    <div class="font-medium text-gray-500 flex items-center gap-1.5">
+                      <%= proj.title %>
+                    </div>
+                  </a>
+                </td>
+                <td class="text-gray-400 text-sm"><%= proj.customer ? proj.customer.name : '—' %></td>
+                <td class="text-right text-sm num text-gray-400"><%= projEffectivePrice(proj) ? formatSEK(projEffectivePrice(proj)) : '—' %></td>
+                <td class="text-center">
+                  <% if (proj.invoiceWeek) { %>
+                    <span class="text-sm text-gray-400 num">V.<%= proj.invoiceWeek %></span>
+                  <% } %>
+                </td>
+                <td class="text-center">
+                  <span class="text-[10px] font-semibold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded"><%= proj.nextInvoiceMonth ? new Date(proj.nextInvoiceMonth).toISOString().slice(0,7) : '—' %></span>
                 </td>
               </tr>
             <% }) %>

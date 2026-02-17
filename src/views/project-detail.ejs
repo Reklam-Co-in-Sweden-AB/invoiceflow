@@ -51,7 +51,7 @@ for (let i = 0; i < 12; i++) {
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
     <!-- Pricing -->
-    <div class="card p-5" x-data="{ price: '<%= project.monthlyPrice || '' %>', interval: '<%= project.billingInterval %>', saving: false }">
+    <div class="card p-5" x-data="{ price: '<%= project.monthlyPrice || '' %>', interval: '<%= project.billingInterval %>', nextInvoice: '<%= project.nextInvoiceMonth ? new Date(project.nextInvoiceMonth).toISOString().slice(0,7) : '' %>', saving: false }">
       <h3 class="text-sm font-bold text-gray-900 mb-3">Fakturering</h3>
       <div class="space-y-3">
         <div>
@@ -69,6 +69,12 @@ for (let i = 0; i < 12; i++) {
           </select>
         </div>
         <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Nästa faktura</label>
+          <input type="month" x-model="nextInvoice"
+            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <p class="text-[10px] text-gray-400 mt-0.5">Projektet visas inte i veckovyn förrän denna månad</p>
+        </div>
+        <div>
           <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Artikel (Visma)</label>
           <select name="articleId"
             class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2"
@@ -81,7 +87,7 @@ for (let i = 0; i < 12; i++) {
         </div>
         <button
           :disabled="saving"
-          @click="saving=true; fetch('/api/projects/<%= project.id %>/settings', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ monthlyPrice: price, billingInterval: interval, articleId: $refs.articleSelect.value || null }) }).then(() => location.reload())"
+          @click="saving=true; fetch('/api/projects/<%= project.id %>/settings', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ monthlyPrice: price, billingInterval: interval, nextInvoiceMonth: nextInvoice, articleId: $refs.articleSelect.value || null }) }).then(() => location.reload())"
           class="btn btn-accent text-xs w-full">
           <span x-show="!saving">Spara</span>
           <span x-show="saving">Sparar...</span>

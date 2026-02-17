@@ -52,17 +52,17 @@ function effectivePrice(p) {
 function suggestWeeks(projects) {
   const weekTotals = [0, 0, 0, 0]; // week 1-4
 
-  // First pass: count already assigned
+  // First pass: count already assigned (only due projects)
   for (const p of projects) {
     const price = effectivePrice(p);
-    if (p.invoiceWeek && price) {
+    if (p.invoiceWeek && price && p._isDue) {
       weekTotals[p.invoiceWeek - 1] += price;
     }
   }
 
-  // Second pass: suggest for unassigned
+  // Second pass: suggest for unassigned (only due projects)
   const suggestions = {};
-  const unassigned = projects.filter(p => !p.invoiceWeek && effectivePrice(p));
+  const unassigned = projects.filter(p => !p.invoiceWeek && effectivePrice(p) && p._isDue);
   // Sort by price desc so big amounts get placed first
   unassigned.sort((a, b) => effectivePrice(b) - effectivePrice(a));
 
@@ -83,6 +83,18 @@ function isInvoicedForMonth(project, monthStart) {
   if (!project.lastInvoicedMonth) return false;
   const d = new Date(project.lastInvoicedMonth);
   return d.getFullYear() === monthStart.getFullYear() && d.getMonth() === monthStart.getMonth();
+}
+
+/**
+ * Check if a project is due for invoicing this month.
+ * If nextInvoiceMonth is set, the project is only due when currentMonth >= nextInvoiceMonth.
+ * If not set, it's always due (backwards compatible).
+ */
+function isDueThisMonth(project, monthStart) {
+  if (!project.nextInvoiceMonth) return true; // no schedule set = always due
+  const next = new Date(project.nextInvoiceMonth);
+  return next.getFullYear() < monthStart.getFullYear() ||
+    (next.getFullYear() === monthStart.getFullYear() && next.getMonth() <= monthStart.getMonth());
 }
 
 /**
@@ -107,11 +119,12 @@ router.get('/', async (req, res) => {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const activeWeek = currentWeekOfMonth();
 
-  // Mark invoiced and paused status on each project
+  // Mark invoiced, paused, and due status on each project
   for (const p of projects) {
     p._invoicedThisMonth = isInvoicedForMonth(p, monthStart);
     p._isPaused = p.pauseFrom && p.pauseUntil &&
       new Date(p.pauseFrom) <= now && new Date(p.pauseUntil) >= now;
+    p._isDue = isDueThisMonth(p, monthStart);
   }
 
   // Filter by week if requested
@@ -140,11 +153,11 @@ router.get('/', async (req, res) => {
   // Week suggestion for projects with prices
   const { suggestions, weekTotals } = suggestWeeks(projects);
 
-  // Count per week for tab badges
+  // Count per week for tab badges (only due projects)
   const weekCounts = [0, 0, 0, 0];
   const weekInvoiced = [0, 0, 0, 0];
   for (const p of projects) {
-    if (p.invoiceWeek && effectivePrice(p)) {
+    if (p.invoiceWeek && effectivePrice(p) && p._isDue) {
       weekCounts[p.invoiceWeek - 1]++;
       if (p._invoicedThisMonth) weekInvoiced[p.invoiceWeek - 1]++;
     }

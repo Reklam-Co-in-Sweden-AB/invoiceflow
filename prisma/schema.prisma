@@ -186,6 +186,7 @@ model Project {
   ourReference       String?   @map("our_reference") // Vår referens (person)
   buyersOrderRef     String?   @map("buyers_order_ref") // Kundens referensmärkning (ordernr)
   invoiceText        String?   @map("invoice_text") // Fakturatext
+  nextInvoiceMonth   DateTime? @map("next_invoice_month") // When the next invoice is due (first of month)
   blikkUpdatedAt     DateTime? @map("blikk_updated_at") // Last updated in Blikk (to skip unchanged)
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
