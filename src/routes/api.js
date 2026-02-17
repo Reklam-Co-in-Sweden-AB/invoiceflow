@@ -346,22 +346,24 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
   }
 });
 
-// Sync articles from Spiris
+// Sync articles from Spiris (one page at a time)
 router.post('/sync/spiris-articles', async (req, res) => {
   try {
-    const { syncSpirisArticles } = require('../services/spiris-sync');
-    const result = await syncSpirisArticles();
+    const page = parseInt(req.query.page) || 1;
+    const { syncSpirisArticlesPage } = require('../services/spiris-sync');
+    const result = await syncSpirisArticlesPage(page);
     res.json({ success: true, ...result });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Sync customers from Spiris (match Visma IDs)
+// Sync customers from Spiris (one page at a time)
 router.post('/sync/spiris-customers', async (req, res) => {
   try {
-    const { syncSpirisCustomers } = require('../services/spiris-sync');
-    const result = await syncSpirisCustomers();
+    const page = parseInt(req.query.page) || 1;
+    const { syncSpirisCustomersPage } = require('../services/spiris-sync');
+    const result = await syncSpirisCustomersPage(page);
     res.json({ success: true, ...result });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

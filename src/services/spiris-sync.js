@@ -8,25 +8,22 @@ const prisma = new PrismaClient();
  * Matches on article number and stores the Visma UUID locally.
  * Creates new local articles for Visma articles that don't exist locally.
  */
-async function syncSpirisArticles() {
+/**
+ * Sync one page of articles from Spiris. Returns { done, page, matched, created, skipped, pageItems }.
+ */
+async function syncSpirisArticlesPage(page = 1) {
   const client = new SpirisClient();
-  const all = [];
-  let page = 1;
+  const pageSize = 50;
+  const data = await client.getArticles(page, pageSize);
+  const items = data.Data || data.data || data;
 
-  while (true) {
-    const data = await client.getArticles(page, 200);
-    const items = data.Data || data.data || data;
-    if (!Array.isArray(items) || items.length === 0) break;
-    all.push(...items);
-    if (items.length < 200) break;
-    page++;
+  if (!Array.isArray(items) || items.length === 0) {
+    return { done: true, page, matched: 0, created: 0, skipped: 0, pageItems: 0 };
   }
 
-  let matched = 0;
-  let created = 0;
-  let skipped = 0;
+  let matched = 0, created = 0, skipped = 0;
 
-  for (const art of all) {
+  for (const art of items) {
     const vismaId = art.Id || art.id;
     const number = art.Number || art.number || '';
     const name = art.Name || art.name || '';
@@ -34,58 +31,38 @@ async function syncSpirisArticles() {
 
     if (!number) { skipped++; continue; }
 
-    // Try to match on article number
-    const local = await prisma.article.findUnique({
-      where: { articleNumber: number },
-    });
+    const local = await prisma.article.findUnique({ where: { articleNumber: number } });
 
     if (local) {
-      await prisma.article.update({
-        where: { id: local.id },
-        data: { vismaArticleId: vismaId },
-      });
+      await prisma.article.update({ where: { id: local.id }, data: { vismaArticleId: vismaId } });
       matched++;
     } else {
       await prisma.article.create({
-        data: {
-          articleNumber: number,
-          name: name || `Artikel ${number}`,
-          vismaArticleId: vismaId,
-          serviceType: 'övrigt',
-          defaultPrice: netPrice,
-        },
+        data: { articleNumber: number, name: name || `Artikel ${number}`, vismaArticleId: vismaId, serviceType: 'övrigt', defaultPrice: netPrice },
       });
       created++;
     }
   }
 
-  return { total: all.length, matched, created, skipped };
+  return { done: items.length < pageSize, page, matched, created, skipped, pageItems: items.length };
 }
 
 /**
- * Sync customers from Spiris (Visma eEkonomi).
- * Matches on customer number or org number and stores the Visma UUID locally.
+ * Sync one page of customers from Spiris. Returns { done, page, matched, skipped, pageItems }.
  */
-async function syncSpirisCustomers() {
+async function syncSpirisCustomersPage(page = 1) {
   const client = new SpirisClient();
-  const all = [];
-  let page = 1;
+  const pageSize = 50;
+  const data = await client.getCustomers(page, pageSize);
+  const items = data.Data || data.data || data;
 
-  while (true) {
-    const data = await client.getCustomers(page, 200);
-    const items = data.Data || data.data || data;
-    if (!Array.isArray(items) || items.length === 0) break;
-    all.push(...items);
-    if (items.length < 200) break;
-    page++;
+  if (!Array.isArray(items) || items.length === 0) {
+    return { done: true, page, matched: 0, skipped: 0, pageItems: 0 };
   }
 
-  let matchedByOrg = 0;
-  let matchedByNumber = 0;
-  let matchedByName = 0;
-  let skipped = 0;
+  let matched = 0, skipped = 0;
 
-  for (const cust of all) {
+  for (const cust of items) {
     const vismaId = cust.Id || cust.id;
     const name = cust.Name || cust.name || '';
     const custNumber = cust.CustomerNumber || cust.customer_number || '';
@@ -93,47 +70,45 @@ async function syncSpirisCustomers() {
 
     if (!vismaId) { skipped++; continue; }
 
-    // Priority 1: Match by org number (most reliable)
     let local = null;
-    let matchType = '';
-    if (orgNumber) {
-      local = await prisma.customer.findFirst({
-        where: { orgNumber: orgNumber },
-      });
-      if (local) matchType = 'org';
-    }
-
-    // Priority 2: Match by customer number
-    if (!local && custNumber) {
-      local = await prisma.customer.findFirst({
-        where: { customerNumber: custNumber },
-      });
-      if (local) matchType = 'number';
-    }
-
-    // Priority 3: Match by exact name (trimmed)
-    if (!local && name) {
-      local = await prisma.customer.findFirst({
-        where: { name: name.trim() },
-      });
-      if (local) matchType = 'name';
-    }
+    if (orgNumber) local = await prisma.customer.findFirst({ where: { orgNumber } });
+    if (!local && custNumber) local = await prisma.customer.findFirst({ where: { customerNumber: custNumber } });
+    if (!local && name) local = await prisma.customer.findFirst({ where: { name: name.trim() } });
 
     if (local) {
-      await prisma.customer.update({
-        where: { id: local.id },
-        data: { vismaCustomerId: vismaId },
-      });
-      if (matchType === 'org') matchedByOrg++;
-      else if (matchType === 'number') matchedByNumber++;
-      else matchedByName++;
+      await prisma.customer.update({ where: { id: local.id }, data: { vismaCustomerId: vismaId } });
+      matched++;
     } else {
       skipped++;
     }
   }
 
-  const matched = matchedByOrg + matchedByNumber + matchedByName;
-  return { total: all.length, matched, matchedByOrg, matchedByNumber, matchedByName, skipped };
+  return { done: items.length < pageSize, page, matched, skipped, pageItems: items.length };
 }
 
-module.exports = { syncSpirisArticles, syncSpirisCustomers };
+/**
+ * Full sync (for cron) — loops through all pages internally.
+ */
+async function syncSpirisArticles() {
+  let page = 1, totalMatched = 0, totalCreated = 0, totalSkipped = 0, total = 0;
+  while (true) {
+    const r = await syncSpirisArticlesPage(page);
+    total += r.pageItems; totalMatched += r.matched; totalCreated += r.created; totalSkipped += r.skipped;
+    if (r.done) break;
+    page++;
+  }
+  return { total, matched: totalMatched, created: totalCreated, skipped: totalSkipped };
+}
+
+async function syncSpirisCustomers() {
+  let page = 1, totalMatched = 0, totalSkipped = 0, total = 0;
+  while (true) {
+    const r = await syncSpirisCustomersPage(page);
+    total += r.pageItems; totalMatched += r.matched; totalSkipped += r.skipped;
+    if (r.done) break;
+    page++;
+  }
+  return { total, matched: totalMatched, skipped: totalSkipped };
+}
+
+module.exports = { syncSpirisArticles, syncSpirisCustomers, syncSpirisArticlesPage, syncSpirisCustomersPage };

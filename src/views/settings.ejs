@@ -240,24 +240,38 @@
 
   <script>
   async function syncSpiris(type) {
-    var result = document.getElementById('spiris-sync-result');
-    result.innerHTML = '<span class="text-gray-400">Synkar...</span>';
-    try {
-      var res = await fetch('/api/sync/' + type, { method: 'POST' });
-      var data = await res.json();
-      if (data.success) {
-        var parts = [];
-        if (data.total != null) parts.push(data.total + ' totalt från Visma');
-        if (data.matched != null) parts.push(data.matched + ' matchade');
-        if (data.created != null) parts.push(data.created + ' nya');
-        if (data.skipped != null) parts.push(data.skipped + ' hoppades');
-        result.innerHTML = '<span class="text-emerald-600 font-semibold">&check; ' + parts.join(', ') + '</span>';
-      } else {
-        result.innerHTML = '<span class="text-red-600 font-semibold">&cross; ' + data.error + '</span>';
+    var el = document.getElementById('spiris-sync-result');
+    var page = 1;
+    var totals = { matched: 0, created: 0, skipped: 0, total: 0 };
+
+    while (true) {
+      el.innerHTML = '<span class="text-blue-600 font-semibold">Synkar sida ' + page + '... (' + totals.total + ' hämtade, ' + totals.matched + ' matchade)</span>';
+      try {
+        var res = await fetch('/api/sync/' + type + '?page=' + page, { method: 'POST' });
+        var data = await res.json();
+        if (!data.success) {
+          el.innerHTML = '<span class="text-red-600 font-semibold">&cross; Sida ' + page + ': ' + data.error + '</span>';
+          return;
+        }
+        totals.total += data.pageItems || 0;
+        totals.matched += data.matched || 0;
+        totals.created += data.created || 0;
+        totals.skipped += data.skipped || 0;
+
+        if (data.done) break;
+        page++;
+      } catch (e) {
+        el.innerHTML = '<span class="text-red-600 font-semibold">&cross; Nätverksfel på sida ' + page + ' (' + totals.matched + ' matchade hittills). Prova igen.</span>';
+        return;
       }
-    } catch (e) {
-      result.innerHTML = '<span class="text-red-600 font-semibold">&cross; Nätverksfel</span>';
     }
+
+    var parts = [];
+    parts.push(totals.total + ' totalt från Visma');
+    if (totals.matched) parts.push(totals.matched + ' matchade');
+    if (totals.created) parts.push(totals.created + ' nya');
+    if (totals.skipped) parts.push(totals.skipped + ' hoppades');
+    el.innerHTML = '<span class="text-emerald-600 font-semibold">&check; Klar — ' + parts.join(', ') + '</span>';
   }
 
   async function testSpiris() {
