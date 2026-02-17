@@ -127,10 +127,13 @@ router.get('/debug/blikk-project', async (req, res) => {
   try {
     const { BlikkClient } = require('../services/blikk-client');
     const client = new BlikkClient();
+    // Get list to find an ID, then fetch detail
     const data = await client.get('/v1/Core/Projects', { page: 1, pageSize: 1 });
     const items = data.items || data.data || data;
     const first = Array.isArray(items) ? items[0] : null;
-    res.json({ fields: first ? Object.keys(first) : [], sample: first });
+    if (!first) return res.json({ error: 'No projects found' });
+    const detail = await client.get(`/v1/Core/Projects/${first.id}`);
+    res.json({ fields: Object.keys(detail), sample: detail });
   } catch (error) {
     res.json({ error: error.message });
   }
