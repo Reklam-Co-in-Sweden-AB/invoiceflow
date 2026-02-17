@@ -14,11 +14,11 @@ async function syncSpirisArticles() {
   let page = 1;
 
   while (true) {
-    const data = await client.getArticles(page, 100);
+    const data = await client.getArticles(page, 200);
     const items = data.Data || data.data || data;
     if (!Array.isArray(items) || items.length === 0) break;
     all.push(...items);
-    if (items.length < 100) break;
+    if (items.length < 200) break;
     page++;
   }
 
@@ -72,11 +72,11 @@ async function syncSpirisCustomers() {
   let page = 1;
 
   while (true) {
-    const data = await client.getCustomers(page, 100);
+    const data = await client.getCustomers(page, 200);
     const items = data.Data || data.data || data;
     if (!Array.isArray(items) || items.length === 0) break;
     all.push(...items);
-    if (items.length < 100) break;
+    if (items.length < 200) break;
     page++;
   }
 

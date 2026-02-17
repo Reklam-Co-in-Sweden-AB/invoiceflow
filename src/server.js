@@ -45,6 +45,37 @@ app.use((req, res, next) => {
   next();
 });
 
+// Cron endpoint (secured by CRON_SECRET, no session needed)
+app.get('/api/cron/daily-sync', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (secret && req.headers.authorization !== `Bearer ${secret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const results = {};
+  try {
+    const { syncBlikkProjects } = require('./services/blikk-sync');
+    results.projects = await syncBlikkProjects();
+  } catch (e) { results.projects = { error: e.message }; }
+
+  try {
+    const { syncBlikkContacts } = require('./services/blikk-sync');
+    results.contacts = await syncBlikkContacts();
+  } catch (e) { results.contacts = { error: e.message }; }
+
+  try {
+    const { syncSpirisCustomers } = require('./services/spiris-sync');
+    results.vismaCustomers = await syncSpirisCustomers();
+  } catch (e) { results.vismaCustomers = { error: e.message }; }
+
+  try {
+    const { syncSpirisArticles } = require('./services/spiris-sync');
+    results.vismaArticles = await syncSpirisArticles();
+  } catch (e) { results.vismaArticles = { error: e.message }; }
+
+  res.json({ success: true, timestamp: new Date().toISOString(), results });
+});
+
 // Routes
 app.use('/', require('./routes/auth'));
 app.use('/', requireAuth, require('./routes/dashboard'));
