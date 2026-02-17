@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../generated/prisma');
 const { BlikkClient } = require('./blikk-client');
 const { getMonthLabel, getInvoiceMonth, appendMonthLabel } = require('./month-label');
 
