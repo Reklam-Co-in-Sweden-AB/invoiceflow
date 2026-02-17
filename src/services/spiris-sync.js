@@ -98,7 +98,7 @@ async function syncSpirisCustomers() {
     let matchType = '';
     if (orgNumber) {
       local = await prisma.customer.findFirst({
-        where: { orgNumber: orgNumber, vismaCustomerId: null },
+        where: { orgNumber: orgNumber },
       });
       if (local) matchType = 'org';
     }
@@ -106,7 +106,7 @@ async function syncSpirisCustomers() {
     // Priority 2: Match by customer number
     if (!local && custNumber) {
       local = await prisma.customer.findFirst({
-        where: { customerNumber: custNumber, vismaCustomerId: null },
+        where: { customerNumber: custNumber },
       });
       if (local) matchType = 'number';
     }
@@ -114,7 +114,7 @@ async function syncSpirisCustomers() {
     // Priority 3: Match by exact name (trimmed)
     if (!local && name) {
       local = await prisma.customer.findFirst({
-        where: { name: name.trim(), vismaCustomerId: null },
+        where: { name: name.trim() },
       });
       if (local) matchType = 'name';
     }
