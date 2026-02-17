@@ -1,0 +1,259 @@
+<%
+function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+function statusPill(s) {
+  const map = {
+    pending_review: ['pill-pending', 'Vantar'],
+    approved: ['pill-approved', 'Godkand'],
+    scheduled: ['pill-scheduled', 'Schemalagd'],
+    exporting: ['pill-exported', 'Exporterar'],
+    exported: ['pill-exported', 'Exporterad'],
+    confirmed: ['pill-confirmed', 'Bekraftad'],
+    failed: ['pill-failed', 'Misslyckad'],
+    skipped: ['pill-skipped', 'Hoppad'],
+  };
+  const [cls, label] = map[s] || ['pill-pending', s];
+  return '<span class="pill ' + cls + '">' + label + '</span>';
+}
+function serviceLabel(s) {
+  if (s === 'marknadskoordinator') return 'Marknadskoord.';
+  if (s === 'supportavtal') return 'Supportavtal';
+  if (s === 'webbhotell') return 'Webbhotell';
+  return s;
+}
+%>
+
+<div class="p-7 space-y-5">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <h2 class="text-lg font-bold text-gray-900">Granska fakturor</h2>
+      <span class="inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full bg-blue-100 text-blue-700 text-xs font-bold"><%= invoices.length %></span>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="card px-4 py-3">
+    <div class="flex items-center gap-3 flex-wrap">
+      <!-- Search -->
+      <div class="relative flex-1 min-w-[200px]">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input
+          type="text"
+          name="search"
+          placeholder="Sok kund..."
+          value="<%= filters.search || '' %>"
+          class="pl-9"
+          hx-get="/api/invoices/table"
+          hx-trigger="keyup delay:300ms"
+          hx-target="#invoice-tbody"
+          hx-include="[name='search'],[name='service'],[name='status']"
+        >
+      </div>
+
+      <!-- Service type -->
+      <select
+        name="service"
+        class="w-48"
+        hx-get="/api/invoices/table"
+        hx-trigger="change"
+        hx-target="#invoice-tbody"
+        hx-include="[name='search'],[name='service'],[name='status']"
+      >
+        <option value="">Alla tjanster</option>
+        <option value="marknadskoordinator" <%= filters.service === 'marknadskoordinator' ? 'selected' : '' %>>Marknadskoordinator</option>
+        <option value="supportavtal" <%= filters.service === 'supportavtal' ? 'selected' : '' %>>Supportavtal</option>
+        <option value="webbhotell" <%= filters.service === 'webbhotell' ? 'selected' : '' %>>Webbhotell</option>
+      </select>
+
+      <!-- Status -->
+      <select
+        name="status"
+        class="w-40"
+        hx-get="/api/invoices/table"
+        hx-trigger="change"
+        hx-target="#invoice-tbody"
+        hx-include="[name='search'],[name='service'],[name='status']"
+      >
+        <option value="">Alla statusar</option>
+        <option value="pending_review" <%= filters.status === 'pending_review' ? 'selected' : '' %>>Vantar</option>
+        <option value="approved" <%= filters.status === 'approved' ? 'selected' : '' %>>Godkand</option>
+        <option value="scheduled" <%= filters.status === 'scheduled' ? 'selected' : '' %>>Schemalagd</option>
+        <option value="exported" <%= filters.status === 'exported' ? 'selected' : '' %>>Exporterad</option>
+        <option value="confirmed" <%= filters.status === 'confirmed' ? 'selected' : '' %>>Bekraftad</option>
+        <option value="skipped" <%= filters.status === 'skipped' ? 'selected' : '' %>>Hoppad</option>
+        <option value="failed" <%= filters.status === 'failed' ? 'selected' : '' %>>Misslyckad</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Table with selection tracking -->
+  <div x-data="{
+    selected: [],
+    get count() { return this.selected.length },
+    toggle(id) {
+      const idx = this.selected.indexOf(id);
+      if (idx === -1) this.selected.push(id);
+      else this.selected.splice(idx, 1);
+    },
+    toggleAll(ids, checked) {
+      this.selected = checked ? [...ids] : [];
+    },
+    syncForm(formId) {
+      const form = document.getElementById(formId);
+      form.querySelectorAll('.bulk-id').forEach(el => el.remove());
+      this.selected.forEach(id => {
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = 'ids';
+        inp.value = id;
+        inp.className = 'bulk-id';
+        form.appendChild(inp);
+      });
+    }
+  }">
+
+    <!-- Selection action bar -->
+    <div
+      x-show="count > 0"
+      x-cloak
+      x-transition
+      class="card px-4 py-3 mb-4 flex items-center justify-between bg-blue-50 border-blue-100"
+    >
+      <span class="text-sm font-semibold text-blue-800" x-text="count + ' faktura' + (count !== 1 ? 'or' : '') + ' valda'"></span>
+      <div class="flex items-center gap-2">
+        <button
+          type="submit"
+          form="bulk-approve"
+          class="btn btn-accent text-xs"
+          @click="syncForm('bulk-approve')"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Godkann valda
+        </button>
+        <button
+          type="submit"
+          form="bulk-skip"
+          class="btn btn-ghost text-xs"
+          @click="syncForm('bulk-skip')"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+          Hoppa over valda
+        </button>
+      </div>
+    </div>
+
+    <!-- Bulk action forms -->
+    <form id="bulk-approve" method="POST" action="/invoices/approve"></form>
+    <form id="bulk-skip" method="POST" action="/invoices/skip"></form>
+
+    <!-- Invoice table -->
+    <div class="card overflow-hidden">
+      <table class="w-full">
+        <thead>
+          <tr class="bg-gray-50/80 border-b border-gray-100">
+            <th class="w-10">
+              <input
+                type="checkbox"
+                class="rounded border-gray-300"
+                @change="toggleAll(<%= JSON.stringify(invoices.map(i => i.id)) %>, $event.target.checked)"
+                :checked="count === <%= invoices.length %> && count > 0"
+              >
+            </th>
+            <th>Kund</th>
+            <th>Tjanst</th>
+            <th class="text-right">Belopp</th>
+            <th class="text-center">Rader</th>
+            <th>Status</th>
+            <th class="w-10"></th>
+          </tr>
+        </thead>
+        <tbody id="invoice-tbody">
+          <% invoices.forEach(inv => { %>
+            <tr
+              x-data="{ open: false }"
+              class="border-b border-gray-50 transition-colors"
+              :class="{ 'bg-blue-50/40': selected.includes(<%= inv.id %>) }"
+            >
+              <td>
+                <input
+                  type="checkbox"
+                  class="rounded border-gray-300"
+                  value="<%= inv.id %>"
+                  @change.stop="toggle(<%= inv.id %>)"
+                  :checked="selected.includes(<%= inv.id %>)"
+                >
+              </td>
+              <td class="font-medium text-gray-900"><%= inv.customer.name %></td>
+              <td class="text-gray-500"><%= serviceLabel(inv.serviceType) %></td>
+              <td class="text-right font-semibold num"><%= formatSEK(inv.totalAmount) %></td>
+              <td class="text-center">
+                <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold"><%= inv.lines.length %></span>
+              </td>
+              <td><%- statusPill(inv.status) %></td>
+              <td>
+                <button
+                  @click="open = !open; document.getElementById('detail-<%= inv.id %>').style.display = open ? '' : 'none'"
+                  class="p-1 rounded hover:bg-gray-100 transition-colors"
+                >
+                  <svg
+                    class="w-4 h-4 text-gray-400 transition-transform duration-200"
+                    :class="{ 'rotate-90': open }"
+                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+            <!-- Expanded invoice lines -->
+            <tr id="detail-<%= inv.id %>" style="display: none;">
+              <td colspan="7" class="p-0 bg-gray-50/70">
+                <div class="px-4 py-3">
+                  <table class="w-full">
+                    <thead>
+                      <tr class="text-[10px]">
+                        <th class="pl-10">Art.nr</th>
+                        <th>Beskrivning</th>
+                        <th class="text-right">Antal</th>
+                        <th class="text-right">A-pris</th>
+                        <th class="text-right pr-4">Summa</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% inv.lines.forEach(line => { %>
+                        <tr class="text-xs text-gray-600 border-t border-gray-100/60">
+                          <td class="pl-10 py-2 text-gray-400 num"><%= line.article ? line.article.articleNumber : '-' %></td>
+                          <td class="py-2">
+                            <span class="font-medium text-gray-700"><%= line.text %></span>
+                            <% if (line.article) { %>
+                              <span class="text-gray-400 ml-1">(<%= line.article.name %>)</span>
+                            <% } %>
+                          </td>
+                          <td class="py-2 text-right num"><%= line.quantity %></td>
+                          <td class="py-2 text-right num"><%= formatSEK(line.unitPrice) %></td>
+                          <td class="py-2 text-right pr-4 font-semibold num"><%= formatSEK(line.lineTotal) %></td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+          <% if (invoices.length === 0) { %>
+            <tr>
+              <td colspan="7" class="text-center text-gray-400 py-8">
+                Inga fakturor att granska.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>[x-cloak] { display: none !important; }</style>

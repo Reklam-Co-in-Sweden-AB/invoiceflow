@@ -1,0 +1,268 @@
+<%
+  const monthNames = ['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december'];
+  const monthLabel = monthNames[currentMonth.getMonth()];
+  const yearLabel = currentMonth.getFullYear();
+  function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+
+  function timeAgo(date) {
+    const now = new Date();
+    const diff = Math.floor((now - new Date(date)) / 1000);
+    if (diff < 60) return 'just nu';
+    if (diff < 3600) return Math.floor(diff / 60) + ' min sedan';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' h sedan';
+    return Math.floor(diff / 86400) + ' d sedan';
+  }
+
+  function logTypeLabel(type) {
+    const map = { fortnox_export: 'Fortnox-export', fortnox_confirm: 'Fortnox-bekräftelse', hosting_sync: 'Hosting-sync', manual: 'Manuell' };
+    return map[type] || type;
+  }
+%>
+
+<!-- Month header -->
+<div class="px-6 pt-6 pb-2">
+  <h2 class="text-xl font-bold text-gray-900 capitalize"><%= monthLabel %> <%= yearLabel %></h2>
+  <p class="text-sm text-gray-400 mt-0.5">Fakturaöversikt och aktivitet</p>
+</div>
+
+<!-- Stat cards -->
+<div class="px-6 pt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+  <!-- Total invoices -->
+  <div class="card stat-card blue p-5">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Fakturor</span>
+      <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+    </div>
+    <div class="text-2xl font-extrabold text-gray-900 num"><%= totalCount %></div>
+    <div class="text-sm text-gray-500 mt-1 num"><%= formatSEK(totalAmount) %></div>
+  </div>
+
+  <!-- Approved -->
+  <div class="card stat-card green p-5">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Godkända</span>
+      <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+    <div class="text-2xl font-extrabold text-gray-900 num"><%= approvedCount %></div>
+    <div class="text-sm text-gray-500 mt-1 num"><%= formatSEK(approvedAmount) %></div>
+  </div>
+
+  <!-- Pending review -->
+  <div class="card stat-card amber p-5">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Att granska</span>
+      <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+    <div class="text-2xl font-extrabold text-gray-900 num"><%= pendingCount %></div>
+    <div class="text-sm text-gray-500 mt-1 num"><%= formatSEK(pendingAmount) %></div>
+  </div>
+
+  <!-- Hosting MRR -->
+  <div class="card stat-card purple p-5">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Hosting MRR</span>
+      <div class="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+        <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>
+      </div>
+    </div>
+    <div class="text-2xl font-extrabold text-gray-900 num"><%= formatSEK(mrr) %></div>
+    <div class="text-sm text-gray-500 mt-1"><%= hostingActiveCount %> aktiva</div>
+  </div>
+
+</div>
+
+<!-- Weekly distribution chart + Activity log -->
+<div class="px-6 pt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+  <!-- Weekly distribution chart -->
+  <div class="card p-5 lg:col-span-2">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-bold text-gray-900">Veckofördelning</h3>
+      <span class="text-xs text-gray-400"><%= batches.length %> batcher</span>
+    </div>
+    <div class="relative" style="height: 240px;">
+      <canvas id="weeklyChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Activity log -->
+  <div class="card p-5">
+    <h3 class="text-sm font-bold text-gray-900 mb-4">Senaste aktivitet</h3>
+    <div class="space-y-3">
+      <% if (recentLogs.length === 0) { %>
+        <p class="text-sm text-gray-400">Ingen aktivitet att visa.</p>
+      <% } else { %>
+        <% recentLogs.forEach(function(log) { %>
+          <div class="flex items-start gap-3">
+            <div class="mt-0.5 w-2 h-2 rounded-full flex-shrink-0 <%= log.status === 'success' ? 'bg-green-400' : log.status === 'failed' ? 'bg-red-400' : 'bg-gray-300' %>"></div>
+            <div class="min-w-0 flex-1">
+              <div class="text-[13px] text-gray-700 font-medium truncate"><%= logTypeLabel(log.type) %></div>
+              <div class="text-[11px] text-gray-400 mt-0.5">
+                <% if (log.invoice) { %>
+                  Faktura #<%= log.invoice.id %> &middot;
+                <% } %>
+                <span class="pill pill-<%= log.status === 'success' ? 'approved' : log.status === 'failed' ? 'failed' : 'pending' %>"><%= log.status %></span>
+              </div>
+              <div class="text-[11px] text-gray-300 mt-0.5"><%= timeAgo(log.createdAt) %></div>
+            </div>
+          </div>
+        <% }); %>
+      <% } %>
+    </div>
+  </div>
+
+</div>
+
+<!-- Pending review quick table -->
+<div class="px-6 pt-6 pb-8">
+  <div class="card">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <h3 class="text-sm font-bold text-gray-900">Väntar på granskning</h3>
+      <a href="/invoices/review" class="btn btn-ghost text-xs">
+        Visa alla
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+
+    <% if (topPending.length === 0) { %>
+      <div class="px-5 py-8 text-center">
+        <div class="text-sm text-gray-400">Inga fakturor att granska</div>
+        <div class="text-xs text-gray-300 mt-1">Allt ser bra ut!</div>
+      </div>
+    <% } else { %>
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-gray-50">
+            <th>Kund</th>
+            <th>Tjänst</th>
+            <th class="text-right">Belopp</th>
+            <th class="text-right">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% topPending.forEach(function(inv) { %>
+            <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+              <td class="font-medium text-gray-900">
+                <%= inv.customer ? inv.customer.name : 'Okänd kund' %>
+              </td>
+              <td class="text-gray-500">
+                <%
+                  const serviceLabels = { consulting: 'Konsulttjänst', hosting: 'Webbhotell', support: 'Support', development: 'Utveckling' };
+                %>
+                <%= serviceLabels[inv.serviceType] || inv.serviceType %>
+              </td>
+              <td class="text-right num font-medium text-gray-900"><%= formatSEK(inv.totalAmount) %></td>
+              <td class="text-right">
+                <span class="pill pill-pending">Granskas</span>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+
+      <div class="px-5 py-3 border-t border-gray-50 flex items-center justify-between">
+        <span class="text-xs text-gray-400"><%= pendingCount %> fakturor väntar totalt</span>
+        <a href="/invoices/review" class="btn btn-accent text-xs">
+          Granska nu
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </a>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Chart.js script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var ctx = document.getElementById('weeklyChart').getContext('2d');
+
+    var batchData = <%- JSON.stringify(batches.map(function(b) {
+      return { week: b.weekNumber, amount: b.totalAmount, count: b.invoiceCount, status: b.status };
+    })) %>;
+
+    var labels = batchData.map(function (b) { return 'V' + b.week; });
+    var amounts = batchData.map(function (b) { return b.amount; });
+    var counts = batchData.map(function (b) { return b.count; });
+
+    var statusColors = {
+      draft: 'rgba(156, 163, 175, 0.7)',
+      pending_review: 'rgba(245, 158, 11, 0.7)',
+      approved: 'rgba(16, 185, 129, 0.7)',
+      scheduled: 'rgba(139, 92, 246, 0.7)',
+      exporting: 'rgba(59, 130, 246, 0.7)',
+      exported: 'rgba(16, 185, 129, 0.85)',
+      confirmed: 'rgba(5, 150, 105, 0.9)'
+    };
+
+    var bgColors = batchData.map(function (b) {
+      return statusColors[b.status] || 'rgba(51, 102, 255, 0.7)';
+    });
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Belopp (kr)',
+          data: amounts,
+          backgroundColor: bgColors,
+          borderRadius: 6,
+          borderSkipped: false,
+          maxBarThickness: 48
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: function (items) { return items[0].label; },
+              label: function (item) {
+                var idx = item.dataIndex;
+                return [
+                  Math.round(item.raw).toLocaleString('sv-SE') + ' kr',
+                  counts[idx] + ' fakturor',
+                  'Status: ' + batchData[idx].status
+                ];
+              }
+            },
+            backgroundColor: '#1f2937',
+            titleFont: { size: 12, weight: '600' },
+            bodyFont: { size: 11 },
+            padding: 10,
+            cornerRadius: 8,
+            displayColors: false
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 11, weight: '500' }, color: '#9ca3af' }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,0.04)' },
+            ticks: {
+              font: { size: 11 },
+              color: '#9ca3af',
+              callback: function (v) {
+                if (v >= 1000) return (v / 1000) + 'k';
+                return v;
+              }
+            }
+          }
+        }
+      }
+    });
+  });
+</script>

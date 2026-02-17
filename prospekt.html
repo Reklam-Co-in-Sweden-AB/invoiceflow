@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FakturaFlöde — Prospekt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        @media print {
+            body { font-size: 11pt; }
+            .no-print { display: none; }
+            .page-break { page-break-before: always; }
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900">
+
+<!-- Header -->
+<div class="bg-gradient-to-br from-blue-800 via-blue-700 to-blue-900 text-white">
+    <div class="max-w-4xl mx-auto px-8 py-16">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl font-bold backdrop-blur-sm">F</div>
+            <span class="text-xl font-semibold tracking-tight">FakturaFlöde</span>
+        </div>
+        <h1 class="text-4xl font-extrabold leading-tight mb-4">Automatiserad<br>faktureringshantering</h1>
+        <p class="text-xl text-blue-200 max-w-2xl">Från manuell hantering till automatiserat flöde. Hämta faktureringsunderlag, fördela jämnt, exportera med ett klick.</p>
+    </div>
+</div>
+
+<div class="max-w-4xl mx-auto px-8 py-12 space-y-16">
+
+    <!-- Problem section -->
+    <section>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium mb-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            Problemet idag
+        </div>
+        <h2 class="text-2xl font-bold mb-6">Manuellt arbete som tar tid varje dag</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="border border-red-200 bg-red-50 rounded-xl p-5">
+                <div class="text-lg font-bold text-red-900 mb-1">100-150 fakturor/mån</div>
+                <p class="text-sm text-red-700">Överförs manuellt mellan Blikk och Visma eEkonomi. Varje faktura kräver kopiering av kunduppgifter, artiklar och belopp.</p>
+            </div>
+            <div class="border border-red-200 bg-red-50 rounded-xl p-5">
+                <div class="text-lg font-bold text-red-900 mb-1">Ingen månadsbeteckning</div>
+                <p class="text-sm text-red-700">Fakturor saknar automatisk månadsbeteckning, vilket gör det svårt för kunder att se vilken period fakturan avser.</p>
+            </div>
+            <div class="border border-red-200 bg-red-50 rounded-xl p-5">
+                <div class="text-lg font-bold text-red-900 mb-1">Ojämn kassaflödesfördelning</div>
+                <p class="text-sm text-red-700">Alla fakturor skickas samtidigt, vilket ger toppar i inbetalningar och gör det svårt att planera likviditet.</p>
+            </div>
+            <div class="border border-red-200 bg-red-50 rounded-xl p-5">
+                <div class="text-lg font-bold text-red-900 mb-1">Webbhotell separat</div>
+                <p class="text-sm text-red-700">Webbhotellfakturor hanteras utanför Blikk utan samlad överblick. Risk att faktureringar missas.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution section -->
+    <section>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium mb-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Lösningen
+        </div>
+        <h2 class="text-2xl font-bold mb-6">FakturaFlöde automatiserar hela kedjan</h2>
+
+        <div class="relative">
+            <!-- Flow diagram -->
+            <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-8 mb-8">
+                <div class="text-center flex-1">
+                    <div class="w-14 h-14 mx-auto bg-blue-100 rounded-xl flex items-center justify-center mb-2">
+                        <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    </div>
+                    <div class="font-semibold text-sm">1. Hämta</div>
+                    <div class="text-xs text-gray-500">Automatisk synk<br>från Blikk</div>
+                </div>
+                <svg class="w-8 h-8 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <div class="text-center flex-1">
+                    <div class="w-14 h-14 mx-auto bg-amber-100 rounded-xl flex items-center justify-center mb-2">
+                        <svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </div>
+                    <div class="font-semibold text-sm">2. Granska</div>
+                    <div class="text-xs text-gray-500">Med månads-<br>beteckning</div>
+                </div>
+                <svg class="w-8 h-8 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <div class="text-center flex-1">
+                    <div class="w-14 h-14 mx-auto bg-purple-100 rounded-xl flex items-center justify-center mb-2">
+                        <svg class="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <div class="font-semibold text-sm">3. Fördela</div>
+                    <div class="text-xs text-gray-500">Jämnt över<br>4 veckor</div>
+                </div>
+                <svg class="w-8 h-8 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <div class="text-center flex-1">
+                    <div class="w-14 h-14 mx-auto bg-green-100 rounded-xl flex items-center justify-center mb-2">
+                        <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    </div>
+                    <div class="font-semibold text-sm">4. Exportera</div>
+                    <div class="text-xs text-gray-500">Till Visma<br>eEkonomi</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="space-y-2">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </div>
+                <h3 class="font-semibold">Automatisk synk</h3>
+                <p class="text-sm text-gray-600">Faktureringsunderlag hämtas automatiskt från Blikk varje dag. Identifierar nya faktureringstillfällen och skapar lokala fakturor.</p>
+            </div>
+            <div class="space-y-2">
+                <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <h3 class="font-semibold">Månadsbeteckning</h3>
+                <p class="text-sm text-gray-600">Varje fakturarad får automatiskt aktuell månadstext, t.ex. "Din Marknadskoordinator — Mars 2026".</p>
+            </div>
+            <div class="space-y-2">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <h3 class="font-semibold">Jämn kassaflödesfördelning</h3>
+                <p class="text-sm text-gray-600">LPT-algoritm fördelar fakturor jämnt över 4 veckor per månad för stabil och förutsägbar likviditet.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Time savings -->
+    <section class="page-break">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm font-medium mb-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Tidsbesparing
+        </div>
+        <h2 class="text-2xl font-bold mb-6">Dramatisk reduktion av manuellt arbete</h2>
+
+        <div class="overflow-hidden rounded-xl border border-gray-200">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Moment</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-red-700 bg-red-50">Före</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-green-700 bg-green-50">Efter</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Besparing</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr>
+                        <td class="px-6 py-4">
+                            <div class="font-medium">Överföra fakturor</div>
+                            <div class="text-sm text-gray-500">Blikk till Visma eEkonomi</div>
+                        </td>
+                        <td class="px-6 py-4 text-center bg-red-50/50 text-red-700 font-semibold">~4 tim/mån</td>
+                        <td class="px-6 py-4 text-center bg-green-50/50 text-green-700 font-semibold">~15 min/mån</td>
+                        <td class="px-6 py-4 text-center font-bold text-blue-600">94%</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4">
+                            <div class="font-medium">Månadsbeteckning</div>
+                            <div class="text-sm text-gray-500">Skriva period på varje fakturarad</div>
+                        </td>
+                        <td class="px-6 py-4 text-center bg-red-50/50 text-red-700 font-semibold">Manuellt per rad</td>
+                        <td class="px-6 py-4 text-center bg-green-50/50 text-green-700 font-semibold">Automatiskt</td>
+                        <td class="px-6 py-4 text-center font-bold text-blue-600">100%</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4">
+                            <div class="font-medium">Kassaflödesplanering</div>
+                            <div class="text-sm text-gray-500">Fördela fakturor för jämn likviditet</div>
+                        </td>
+                        <td class="px-6 py-4 text-center bg-red-50/50 text-red-700 font-semibold">Ingen</td>
+                        <td class="px-6 py-4 text-center bg-green-50/50 text-green-700 font-semibold">Inbyggd</td>
+                        <td class="px-6 py-4 text-center font-bold text-blue-600">Ny</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4">
+                            <div class="font-medium">Webbhotell-överblick</div>
+                            <div class="text-sm text-gray-500">Hantering av webbhotellprenumerationer</div>
+                        </td>
+                        <td class="px-6 py-4 text-center bg-red-50/50 text-red-700 font-semibold">Separat hantering</td>
+                        <td class="px-6 py-4 text-center bg-green-50/50 text-green-700 font-semibold">Samlad vy</td>
+                        <td class="px-6 py-4 text-center font-bold text-blue-600">Ny</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-6 flex items-start gap-4">
+            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span class="text-2xl font-extrabold text-blue-600">94%</span>
+            </div>
+            <div>
+                <div class="font-semibold text-blue-900">Från ~4 timmar till ~15 minuter per månad</div>
+                <p class="text-sm text-blue-700 mt-1">Den tid som frigörs kan istället läggas på att utveckla affären. Granskning tar ~15 minuter per månad — resten sköter FakturaFlöde automatiskt.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technical solution -->
+    <section>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-800 text-sm font-medium mb-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            Teknisk lösning
+        </div>
+        <h2 class="text-2xl font-bold mb-6">Byggt med beprövad teknik</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="border border-gray-200 rounded-xl p-5 space-y-3">
+                <h3 class="font-semibold">Integration</h3>
+                <ul class="space-y-2 text-sm text-gray-600">
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Blikk API — Hämtar projekt och faktureringsunderlag
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Visma eEkonomi API — Skapar fakturadrafts via OAuth 2.0
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Säker tokenhantering med krypterad lagring
+                    </li>
+                </ul>
+            </div>
+            <div class="border border-gray-200 rounded-xl p-5 space-y-3">
+                <h3 class="font-semibold">Hosting & drift</h3>
+                <ul class="space-y-2 text-sm text-gray-600">
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Körs på befintlig Oderland cPanel-hosting
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Ingen extra driftkostnad
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Automatisk schemaläggning via cron
+                    </li>
+                </ul>
+            </div>
+            <div class="border border-gray-200 rounded-xl p-5 space-y-3">
+                <h3 class="font-semibold">Säkerhet</h3>
+                <ul class="space-y-2 text-sm text-gray-600">
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        OAuth 2.0 med automatisk token-refresh
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Krypterad lagring av API-nycklar (AES-256)
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Inloggningsskyddad — enbart för administratör
+                    </li>
+                </ul>
+            </div>
+            <div class="border border-gray-200 rounded-xl p-5 space-y-3">
+                <h3 class="font-semibold">Dashboard</h3>
+                <ul class="space-y-2 text-sm text-gray-600">
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Realtidsöversikt med sammanfattningskort
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Veckofördelningsdiagram med Chart.js
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Prognoser och trendanalys
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Investment -->
+    <section>
+        <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 text-white">
+            <h2 class="text-2xl font-bold mb-6">Investering</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="font-semibold text-gray-300 uppercase text-xs tracking-wider mb-4">Utveckling</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center py-2 border-b border-gray-700">
+                            <span class="text-gray-300">Grund (Laravel, DB, auth)</span>
+                            <span class="font-medium">Fas 1</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-700">
+                            <span class="text-gray-300">Blikk-integration</span>
+                            <span class="font-medium">Fas 2</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-700">
+                            <span class="text-gray-300">Gransknings-UI</span>
+                            <span class="font-medium">Fas 3</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-700">
+                            <span class="text-gray-300">Kassaflödesfördelning</span>
+                            <span class="font-medium">Fas 4</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-700">
+                            <span class="text-gray-300">Visma-integration</span>
+                            <span class="font-medium">Fas 5</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-700">
+                            <span class="text-gray-300">Webbhotell + Dashboard</span>
+                            <span class="font-medium">Fas 6</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-700">
+                            <span class="text-gray-300">Deploy + polish</span>
+                            <span class="font-medium">Fas 7</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold text-gray-300 uppercase text-xs tracking-wider mb-4">Ekonomi</h3>
+                    <div class="bg-gray-700/50 rounded-xl p-6 space-y-4">
+                        <div>
+                            <div class="text-sm text-gray-400">Engångskostnad</div>
+                            <div class="text-3xl font-bold">[Att specificera]</div>
+                        </div>
+                        <div class="border-t border-gray-600 pt-4">
+                            <div class="text-sm text-gray-400">Löpande driftkostnad</div>
+                            <div class="text-xl font-bold text-green-400">0 kr/mån</div>
+                            <div class="text-sm text-gray-400 mt-1">Körs på befintlig hosting</div>
+                        </div>
+                        <div class="border-t border-gray-600 pt-4">
+                            <div class="text-sm text-gray-400">Tidsbesparing</div>
+                            <div class="text-xl font-bold text-blue-400">~3.75 tim/mån</div>
+                            <div class="text-sm text-gray-400 mt-1">~45 timmar per år</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-200 pt-8 pb-4 text-center text-sm text-gray-500">
+        <div class="flex items-center justify-center gap-2 mb-2">
+            <div class="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-bold">F</div>
+            <span class="font-semibold text-gray-700">FakturaFlöde</span>
+        </div>
+        <p>Automatiserad faktureringshantering &middot; Blikk &rarr; Visma eEkonomi</p>
+    </footer>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,492 @@
+<%
+function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+function projEffectivePrice(p) {
+  if (p.billingSplits && p.billingSplits.length > 0) return p.billingSplits.reduce((s, sp) => s + sp.amount, 0);
+  return p.monthlyPrice || 0;
+}
+const sectionIcons = {
+  recurring: '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>',
+  ongoing:   '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
+  fixed:     '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>',
+  other:     '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/></svg>',
+};
+const monthNames = ['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december'];
+const now = new Date();
+const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
+%>
+
+<div class="p-7 space-y-6" x-data="bulkSend()">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-lg font-bold text-gray-900">Fakturering</h2>
+      <p class="text-xs text-gray-400 mt-0.5"><%= currentMonthLabel %></p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/projects?completed=<%= showCompleted ? '0' : '1' %>" class="btn btn-ghost text-xs">
+        <%= showCompleted ? 'Dölj avslutade' : 'Visa avslutade' %>
+      </a>
+      <button
+        class="btn btn-ghost text-xs"
+        @click="showPriceAdjust = true"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        Prishöjning
+      </button>
+      <button
+        class="btn btn-ghost text-xs text-amber-600 hover:text-amber-800"
+        @click="if(confirm('Nollställ faktureringsstatus för alla projekt?')) fetch('/api/projects/reset-invoiced',{method:'POST'}).then(()=>location.reload())"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Återställ
+      </button>
+      <button
+        class="btn btn-ghost text-xs"
+        hx-post="/api/sync/projects"
+        hx-swap="none"
+        hx-indicator="#syncSpinner"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <span id="syncSpinner" class="htmx-indicator">
+          <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+        </span>
+        Synka från Blikk
+      </button>
+    </div>
+  </div>
+
+  <div id="syncResult" class="hidden">
+    <div class="card p-3 bg-green-50 border border-green-200 text-sm text-green-800"></div>
+  </div>
+
+  <!-- Week tabs -->
+  <% const hasAnyPriced = weekTotals.some(w => w > 0); %>
+  <% if (hasAnyPriced) { %>
+    <div class="card p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <h3 class="text-sm font-bold text-gray-900">Veckofördelning</h3>
+        <span class="text-[10px] text-gray-400 ml-auto">Vecka <%= activeWeek %> av månaden</span>
+      </div>
+      <div class="grid grid-cols-5 gap-2">
+        <!-- All weeks tab -->
+        <a href="/projects<%= showCompleted ? '?completed=1' : '' %>"
+          class="rounded-lg p-3 text-center transition-colors border-2 <%= !weekFilter ? 'border-gray-900 bg-gray-50' : 'border-transparent hover:bg-gray-50' %>">
+          <div class="text-xs font-semibold text-gray-500 mb-1">Alla</div>
+          <div class="text-sm font-bold num text-gray-700"><%= formatSEK(weekTotals.reduce((a, b) => a + b, 0)) %></div>
+        </a>
+        <% for (let w = 0; w < 4; w++) { %>
+          <% const remaining = weekCounts[w] - weekInvoiced[w]; %>
+          <a href="/projects?week=<%= w + 1 %><%= showCompleted ? '&completed=1' : '' %>"
+            class="rounded-lg p-3 text-center transition-colors border-2
+              <%= weekFilter === w + 1 ? 'border-blue-500 bg-blue-50' : activeWeek === w + 1 ? 'border-blue-200 bg-blue-50/50 hover:bg-blue-50' : 'border-transparent hover:bg-gray-50' %>">
+            <div class="text-xs font-semibold text-gray-500 mb-1">
+              Vecka <%= w + 1 %>
+              <% if (activeWeek === w + 1) { %><span class="text-blue-500">(nu)</span><% } %>
+            </div>
+            <div class="text-sm font-bold num <%= weekTotals[w] > 0 ? 'text-blue-700' : 'text-gray-300' %>"><%= formatSEK(weekTotals[w]) %></div>
+            <div class="text-[10px] mt-0.5 <%= remaining > 0 ? 'text-amber-600 font-semibold' : 'text-emerald-600' %>">
+              <% if (weekCounts[w] === 0) { %>
+                <span class="text-gray-300">Inga projekt</span>
+              <% } else if (remaining > 0) { %>
+                <%= remaining %> kvar att fakturera
+              <% } else { %>
+                Alla fakturerade
+              <% } %>
+            </div>
+          </a>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Sections -->
+  <% Object.entries(sections).forEach(([name, section]) => { %>
+    <%
+      const nonInvoiced = section.projects.filter(p => !p._invoicedThisMonth && !p._isPaused);
+      const paused = section.projects.filter(p => p._isPaused && !p._invoicedThisMonth);
+      const invoiced = section.projects.filter(p => p._invoicedThisMonth);
+    %>
+    <div class="space-y-2" x-data="{ open: true }">
+      <button @click="open = !open" class="w-full flex items-center gap-3 group">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
+          <%= name === 'Din Marknadskoordinator' ? 'bg-blue-50 text-blue-500' :
+             name === 'Supportavtal' ? 'bg-emerald-50 text-emerald-500' :
+             name === 'Löpande uppdrag' ? 'bg-amber-50 text-amber-500' :
+             name === 'Fastprisprojekt' ? 'bg-purple-50 text-purple-500' :
+             'bg-gray-100 text-gray-400' %>">
+          <%- sectionIcons[section.icon] || sectionIcons.other %>
+        </div>
+        <div class="text-left flex-1 min-w-0">
+          <div class="text-sm font-bold text-gray-900"><%= name %></div>
+          <div class="text-[11px] text-gray-400">
+            <%= nonInvoiced.length %> att fakturera
+            <% if (paused.length > 0) { %> &middot; <%= paused.length %> pausade<% } %>
+            <% if (invoiced.length > 0) { %> &middot; <%= invoiced.length %> fakturerade<% } %>
+          </div>
+        </div>
+        <% const sectionTotal = nonInvoiced.reduce((s, p) => s + projEffectivePrice(p), 0); %>
+        <% if (sectionTotal > 0) { %>
+          <span class="text-sm font-bold text-gray-600 num"><%= formatSEK(sectionTotal) %></span>
+        <% } %>
+        <svg class="w-4 h-4 text-gray-400 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+
+      <div x-show="open" x-collapse class="card overflow-hidden">
+        <table class="w-full">
+          <thead>
+            <tr class="bg-gray-50/80 border-b border-gray-100">
+              <th class="w-8 px-2"><input type="checkbox" class="rounded border-gray-300" @change="toggleSection('<%= name %>', $event.target.checked, $el)"></th>
+              <th>Projekt</th>
+              <th>Kund</th>
+              <th class="text-right">Pris/mån</th>
+              <th class="text-center">Vecka</th>
+              <th class="text-center w-20">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Non-invoiced projects first -->
+            <% nonInvoiced.forEach(proj => { %>
+              <% const suggestedWeek = suggestions[proj.id]; %>
+              <% const canBulkSend = proj.monthlyPrice && proj.customer && proj.customer.vismaCustomerId; %>
+              <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50">
+                <td class="w-8 px-2">
+                  <% if (canBulkSend) { %>
+                    <input type="checkbox" class="rounded border-gray-300 bulk-check" value="<%= proj.id %>" @change="toggleProject(<%= proj.id %>, $event.target.checked)" data-section="<%= name %>">
+                  <% } else { %>
+                    <span class="text-gray-200" title="Saknar pris, kund eller Visma-ID">—</span>
+                  <% } %>
+                </td>
+                <td>
+                  <a href="/projects/<%= proj.id %>" class="block hover:text-blue-600 transition-colors">
+                    <div class="font-medium text-gray-900 flex items-center gap-1.5">
+                      <%= proj.title %>
+                      <% if (proj.billingSplits && proj.billingSplits.length > 0) { %>
+                        <span class="text-[10px] font-semibold bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded"><%= proj.billingSplits.length %> splitar</span>
+                      <% } %>
+                    </div>
+                    <% if (proj.orderNumber) { %>
+                      <div class="text-[10px] text-gray-400">#<%= proj.orderNumber %></div>
+                    <% } %>
+                  </a>
+                </td>
+                <td class="text-gray-500 text-sm"><%= proj.customer ? proj.customer.name : '—' %></td>
+
+                <!-- Price -->
+                <td class="text-right">
+                  <% const hasProjSplits = proj.billingSplits && proj.billingSplits.length > 0; %>
+                  <% if (hasProjSplits) { %>
+                    <span class="text-sm num font-semibold text-purple-700"><%= formatSEK(projEffectivePrice(proj)) %></span>
+                  <% } else { %>
+                  <div class="inline-flex items-center" x-data="{ editing: false, val: '<%= proj.monthlyPrice || '' %>' }">
+                    <button x-show="!editing" @click="editing = true; $nextTick(() => $refs.priceInput_<%= proj.id %>.focus())" class="text-sm num hover:text-blue-600 transition-colors <%= proj.monthlyPrice ? 'font-semibold text-gray-900' : 'text-gray-300 text-xs' %>">
+                      <%= proj.monthlyPrice ? formatSEK(proj.monthlyPrice) : 'Sätt pris' %>
+                    </button>
+                    <form x-show="editing" class="flex items-center gap-1"
+                      @submit.prevent="fetch('/api/projects/<%= proj.id %>/price', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({monthlyPrice:val}) }).then(() => location.reload())">
+                      <input type="number" x-ref="priceInput_<%= proj.id %>" x-model="val" step="50"
+                        class="w-20 text-right text-sm border border-gray-200 rounded px-2 py-1 num focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        @keydown.escape="editing = false">
+                      <button type="submit" class="text-green-600 hover:text-green-800">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      </button>
+                    </form>
+                  </div>
+                  <% } %>
+                </td>
+
+                <!-- Week -->
+                <td class="text-center">
+                  <% if (proj.invoiceWeek) { %>
+                    <span class="inline-flex items-center gap-1">
+                      <span class="text-sm font-bold text-blue-700 num">V.<%= proj.invoiceWeek %></span>
+                      <button
+                        class="text-gray-300 hover:text-red-500 transition-colors"
+                        hx-patch="/api/projects/<%= proj.id %>/price"
+                        hx-vals='{"invoiceWeek": ""}'
+                        hx-swap="none"
+                        hx-on::after-request="location.reload()"
+                      >
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                      </button>
+                    </span>
+                  <% } else if (suggestedWeek) { %>
+                    <button
+                      class="text-xs text-blue-400 hover:text-blue-600 border border-blue-200 hover:border-blue-400 rounded px-2 py-0.5 transition-colors"
+                      hx-patch="/api/projects/<%= proj.id %>/price"
+                      hx-vals='{"invoiceWeek": "<%= suggestedWeek %>"}'
+                      hx-swap="none"
+                      hx-on::after-request="location.reload()"
+                    >
+                      V.<%= suggestedWeek %>?
+                    </button>
+                  <% } else if (proj.monthlyPrice) { %>
+                    <span class="text-xs text-gray-300">—</span>
+                  <% } else { %>
+                    <span class="text-[10px] text-gray-300">Sätt pris först</span>
+                  <% } %>
+                </td>
+
+                <!-- Status -->
+                <td class="text-center">
+                  <span class="text-[10px] font-semibold bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded">Ej skickad</span>
+                </td>
+              </tr>
+            <% }) %>
+
+            <!-- Paused projects -->
+            <% paused.forEach(proj => { %>
+              <tr class="opacity-60 border-b border-gray-50 bg-amber-50/30">
+                <td class="w-8 px-2">
+                  <svg class="w-4 h-4 text-amber-400 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </td>
+                <td>
+                  <a href="/projects/<%= proj.id %>" class="block hover:text-blue-600 transition-colors">
+                    <div class="font-medium text-gray-500 flex items-center gap-1.5">
+                      <%= proj.title %>
+                      <% if (proj.billingSplits && proj.billingSplits.length > 0) { %>
+                        <span class="text-[10px] font-semibold bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded"><%= proj.billingSplits.length %> splitar</span>
+                      <% } %>
+                    </div>
+                  </a>
+                </td>
+                <td class="text-gray-400 text-sm"><%= proj.customer ? proj.customer.name : '—' %></td>
+                <td class="text-right text-sm num text-gray-400"><%= projEffectivePrice(proj) ? formatSEK(projEffectivePrice(proj)) : '—' %></td>
+                <td class="text-center">
+                  <% if (proj.invoiceWeek) { %>
+                    <span class="text-sm text-gray-400 num">V.<%= proj.invoiceWeek %></span>
+                  <% } %>
+                </td>
+                <td class="text-center">
+                  <span class="text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Pausad</span>
+                </td>
+              </tr>
+            <% }) %>
+
+            <!-- Invoiced projects (dimmed) -->
+            <% invoiced.forEach(proj => { %>
+              <tr class="opacity-40 border-b border-gray-50">
+                <td class="w-8 px-2">
+                  <svg class="w-4 h-4 text-emerald-500 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </td>
+                <td>
+                  <a href="/projects/<%= proj.id %>" class="block hover:text-blue-600 transition-colors">
+                    <div class="font-medium text-gray-500 flex items-center gap-1.5">
+                      <%= proj.title %>
+                      <% if (proj.billingSplits && proj.billingSplits.length > 0) { %>
+                        <span class="text-[10px] font-semibold bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded"><%= proj.billingSplits.length %> splitar</span>
+                      <% } %>
+                    </div>
+                  </a>
+                </td>
+                <td class="text-gray-400 text-sm"><%= proj.customer ? proj.customer.name : '—' %></td>
+                <td class="text-right text-sm num text-gray-400"><%= projEffectivePrice(proj) ? formatSEK(projEffectivePrice(proj)) : '—' %></td>
+                <td class="text-center">
+                  <% if (proj.invoiceWeek) { %>
+                    <span class="text-sm text-gray-400 num">V.<%= proj.invoiceWeek %></span>
+                  <% } %>
+                </td>
+                <td class="text-center">
+                  <span class="text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded">Skickad</span>
+                </td>
+              </tr>
+            <% }) %>
+
+            <% if (section.projects.length === 0) { %>
+              <tr><td colspan="6" class="text-center text-gray-400 py-4 text-sm">Inga projekt i denna kategori</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% }) %>
+
+  <% if (Object.keys(sections).length === 0) { %>
+    <div class="card p-8 text-center">
+      <% if (weekFilter) { %>
+        <div class="text-sm text-gray-400">Inga projekt tilldelade vecka <%= weekFilter %>.</div>
+        <div class="text-xs text-gray-300 mt-1"><a href="/projects" class="text-blue-500 hover:underline">Visa alla projekt</a></div>
+      <% } else { %>
+        <div class="text-sm text-gray-400">Inga projekt synkade ännu.</div>
+        <div class="text-xs text-gray-300 mt-1">Klicka "Synka från Blikk" för att hämta projekt.</div>
+      <% } %>
+    </div>
+  <% } %>
+
+  <!-- Price adjustment modal -->
+  <div x-show="showPriceAdjust" x-transition class="fixed inset-0 bg-black/30 z-50 flex items-center justify-center" @click.self="showPriceAdjust = false">
+    <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4">
+      <h3 class="text-lg font-bold text-gray-900 mb-1">Prishöjning</h3>
+      <p class="text-xs text-gray-400 mb-4">Justera månadspris för alla projekt med angiven procent.</p>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Procentuell ändring</label>
+          <div class="flex items-center gap-2">
+            <input type="number" x-model="adjustPct" step="0.5" placeholder="3"
+              class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 num focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <span class="text-sm text-gray-500 font-bold">%</span>
+          </div>
+          <p class="text-[10px] text-gray-400 mt-1">T.ex. 3 = 3% höjning, -5 = 5% sänkning</p>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Kategori (valfritt)</label>
+          <select x-model="adjustCategory" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2">
+            <option value="">Alla projekt</option>
+            <option value="Din Marknadskoordinator">Din Marknadskoordinator</option>
+            <option value="Supportavtal">Supportavtal</option>
+          </select>
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button
+            :disabled="adjustSending || !adjustPct"
+            @click="if(confirm('Höja priser med ' + adjustPct + '%' + (adjustCategory ? ' för ' + adjustCategory : ' för alla projekt') + '?')) { adjustSending=true; fetch('/api/projects/price-adjustment', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ percentage: adjustPct, category: adjustCategory || undefined }) }).then(r=>r.json()).then(d => { adjustSending=false; if(d.success) { alert('Uppdaterade ' + d.updated + ' projekt'); location.reload(); } else { alert(d.error); } }).catch(e => { adjustSending=false; alert(e.message); }); }"
+            class="btn btn-accent text-xs flex-1">
+            <span x-show="!adjustSending">Genomför</span>
+            <span x-show="adjustSending">Uppdaterar...</span>
+          </button>
+          <button @click="showPriceAdjust = false" class="btn btn-ghost text-xs">Avbryt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating bulk action bar -->
+  <div x-show="selected.length > 0" x-transition
+    class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-xl shadow-2xl px-5 py-3 flex items-center gap-4 z-50">
+    <span class="text-sm font-medium" x-text="selected.length + ' projekt valda'"></span>
+    <button @click="sendBulk()" :disabled="sending"
+      class="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      <span x-show="!sending">Skicka till Visma</span>
+      <span x-show="sending">Skickar...</span>
+    </button>
+    <button @click="clearSelection()" class="text-gray-400 hover:text-white transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <!-- Bulk result modal -->
+  <div x-show="bulkResult" x-transition class="fixed inset-0 bg-black/30 z-50 flex items-center justify-center" @click.self="bulkResult = null; location.reload()">
+    <div class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
+      <template x-if="bulkResult">
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 mb-3">Resultat</h3>
+          <div class="flex gap-4 mb-4">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-emerald-600" x-text="bulkResult.sent"></div>
+              <div class="text-xs text-gray-500">Skickade</div>
+            </div>
+            <div class="text-center" x-show="bulkResult.failed > 0">
+              <div class="text-2xl font-bold text-red-600" x-text="bulkResult.failed"></div>
+              <div class="text-xs text-gray-500">Misslyckades</div>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <template x-for="r in bulkResult.results" :key="r.id">
+              <div>
+                <div class="flex items-center gap-2 text-sm py-1 border-b border-gray-50">
+                  <span x-show="r.success" class="text-emerald-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  </span>
+                  <span x-show="!r.success" class="text-red-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </span>
+                  <span class="font-medium text-gray-900" x-text="r.title"></span>
+                  <span x-show="r.splitCount" class="text-[10px] font-semibold bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded" x-text="r.splitCount + ' splitar'"></span>
+                  <span x-show="r.success && !r.splitResults" class="text-xs text-gray-400 ml-auto" x-text="r.price ? r.price.toLocaleString('sv-SE') + ' kr' : ''"></span>
+                  <span x-show="r.success && r.splitResults" class="text-xs text-gray-400 ml-auto" x-text="r.price ? r.price.toLocaleString('sv-SE') + ' kr' : ''"></span>
+                  <span x-show="!r.success && !r.splitResults" class="text-xs text-red-500 ml-auto" x-text="r.error"></span>
+                </div>
+                <!-- Sub-results per split -->
+                <template x-if="r.splitResults">
+                  <div class="ml-8 space-y-0.5 mb-1">
+                    <template x-for="(sr, si) in r.splitResults" :key="si">
+                      <div class="flex items-center gap-2 text-xs py-0.5">
+                        <span x-show="sr.success" class="text-emerald-400">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        <span x-show="!sr.success" class="text-red-400">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </span>
+                        <span class="text-gray-600" x-text="sr.customer"></span>
+                        <span x-show="sr.success" class="text-gray-400 ml-auto" x-text="sr.amount.toLocaleString('sv-SE') + ' kr'"></span>
+                        <span x-show="!sr.success" class="text-red-500 ml-auto" x-text="sr.error"></span>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+          <button @click="bulkResult = null; location.reload()" class="btn btn-ghost text-xs mt-4 w-full">Stäng</button>
+        </div>
+      </template>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function bulkSend() {
+    return {
+      selected: [],
+      sending: false,
+      bulkResult: null,
+      showPriceAdjust: false,
+      adjustPct: '',
+      adjustCategory: '',
+      adjustSending: false,
+
+      toggleProject(id, checked) {
+        if (checked) {
+          if (!this.selected.includes(id)) this.selected.push(id);
+        } else {
+          this.selected = this.selected.filter(x => x !== id);
+        }
+      },
+
+      toggleSection(name, checked, el) {
+        const table = el.closest('table');
+        const checks = table.querySelectorAll('input.bulk-check');
+        checks.forEach(cb => {
+          cb.checked = checked;
+          this.toggleProject(parseInt(cb.value), checked);
+        });
+      },
+
+      clearSelection() {
+        this.selected = [];
+        document.querySelectorAll('input.bulk-check').forEach(cb => cb.checked = false);
+        document.querySelectorAll('thead input[type="checkbox"]').forEach(cb => cb.checked = false);
+      },
+
+      async sendBulk() {
+        if (this.selected.length === 0 || this.sending) return;
+        this.sending = true;
+        try {
+          const resp = await fetch('/api/projects/bulk-send-to-visma', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectIds: this.selected }),
+          });
+          this.bulkResult = await resp.json();
+          this.clearSelection();
+        } catch (e) {
+          this.bulkResult = { sent: 0, failed: this.selected.length, results: [{ title: 'Fel', success: false, error: e.message }] };
+        } finally {
+          this.sending = false;
+        }
+      },
+    };
+  }
+
+  document.body.addEventListener('htmx:afterRequest', function(e) {
+    if (e.detail.pathInfo.requestPath === '/api/sync/projects' && e.detail.successful) {
+      var data = JSON.parse(e.detail.xhr.responseText);
+      var el = document.getElementById('syncResult');
+      el.classList.remove('hidden');
+      el.querySelector('div').textContent = 'Synk klar: ' + data.total + ' projekt (' + data.created + ' nya, ' + data.updated + ' uppdaterade)';
+      setTimeout(function() { location.reload(); }, 1500);
+    }
+  });
+</script>

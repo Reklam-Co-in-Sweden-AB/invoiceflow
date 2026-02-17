@@ -1,0 +1,276 @@
+<div class="p-7 space-y-5">
+  <h2 class="text-lg font-bold text-gray-900">Inställningar</h2>
+
+  <!-- Blikk -->
+  <div class="card p-6">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h3 class="text-sm font-bold text-gray-900">Blikk API</h3>
+        <p class="text-xs text-gray-400 mt-0.5">Autentisering och synk</p>
+      </div>
+      <% if (blikkToken) { %>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
+          <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>Ansluten
+        </span>
+      <% } else { %>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">
+          <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>Ej ansluten
+        </span>
+      <% } %>
+    </div>
+    <form method="POST" action="/settings/blikk">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">App-Id</label>
+          <input type="text" name="username" value="<%= settings.blikk_username || '' %>" placeholder="ap_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">App-hemlighet</label>
+          <input type="password" name="password" value="<%= settings.blikk_password || '' %>" placeholder="••••••••">
+        </div>
+      </div>
+      <div class="mt-4 flex items-center gap-3">
+        <button type="submit" class="btn btn-accent text-xs">Spara</button>
+        <button type="button" id="test-blikk" class="btn btn-ghost text-xs" onclick="testBlikk()">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Testa anslutning
+        </button>
+        <span id="blikk-result" class="text-xs"></span>
+      </div>
+    </form>
+  </div>
+
+  <!-- Blikk Sync -->
+  <div class="card p-6">
+    <h3 class="text-sm font-bold text-gray-900 mb-1">Synkronisering</h3>
+    <p class="text-xs text-gray-400 mb-4">Hämta data från Blikk till FakturaFlöde</p>
+    <div class="flex items-center gap-3 flex-wrap">
+      <button type="button" class="btn btn-accent text-xs" onclick="runSync('contacts')">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Synka kontakter
+      </button>
+      <input type="month" id="sync-month" class="text-xs px-2 py-1.5 rounded-lg border border-gray-200" value="<%= new Date().toISOString().slice(0,7) %>">
+      <button type="button" class="btn btn-accent text-xs" onclick="runSync('blikk')">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Synka månad
+      </button>
+      <button type="button" class="btn btn-ghost text-xs" onclick="runSync('blikk-all')">
+        Synka alla osynkade
+      </button>
+      <button type="button" class="btn btn-ghost text-xs" onclick="showUnsent()">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Visa osynkade fakturor
+      </button>
+      <button type="button" class="btn btn-ghost text-xs" onclick="previewBlikk()">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        Förhandsgranska API-data
+      </button>
+    </div>
+    <div id="sync-result" class="mt-3 text-xs"></div>
+    <div id="preview-data" class="mt-3 hidden">
+      <pre class="bg-gray-900 text-green-400 text-xs p-4 rounded-lg overflow-x-auto max-h-96 overflow-y-auto"></pre>
+    </div>
+  </div>
+
+  <script>
+  async function testBlikk() {
+    const btn = document.getElementById('test-blikk');
+    const result = document.getElementById('blikk-result');
+    btn.disabled = true;
+    result.innerHTML = '<span class="text-gray-400">Testar...</span>';
+    try {
+      const res = await fetch('/api/test/blikk', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        result.innerHTML = '<span class="text-emerald-600 font-semibold">&check; Anslutning OK' + (data.info ? ' — ' + data.info : '') + '</span>';
+      } else {
+        result.innerHTML = '<span class="text-red-600 font-semibold">&cross; ' + (data.error || 'Misslyckades') + '</span>';
+      }
+    } catch (e) {
+      result.innerHTML = '<span class="text-red-600 font-semibold">&cross; Nätverksfel</span>';
+    }
+    btn.disabled = false;
+  }
+
+  async function runSync(type) {
+    const result = document.getElementById('sync-result');
+    result.innerHTML = '<span class="text-gray-400">Synkar... (kan ta en stund)</span>';
+    try {
+      let url = '/api/sync/' + (type === 'blikk-all' ? 'blikk' : type);
+      if (type === 'blikk') {
+        const month = document.getElementById('sync-month').value;
+        if (month) url += '?month=' + month;
+      }
+      const res = await fetch(url, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        const parts = [];
+        if (data.month) parts.push(data.month);
+        if (data.unsentInMonth != null) parts.push(data.unsentInMonth + ' osynkade i månaden');
+        if (data.total != null && !data.month) parts.push(data.total + ' totalt');
+        if (data.created != null) parts.push(data.created + ' nya');
+        if (data.updated != null) parts.push(data.updated + ' uppdaterade');
+        if (data.skipped != null) parts.push(data.skipped + ' hoppades över');
+        result.innerHTML = '<span class="text-emerald-600 font-semibold">&check; Klar — ' + parts.join(', ') + '</span>';
+      } else {
+        result.innerHTML = '<span class="text-red-600 font-semibold">&cross; ' + (data.error || 'Misslyckades') + '</span>';
+      }
+    } catch (e) {
+      result.innerHTML = '<span class="text-red-600 font-semibold">&cross; Nätverksfel: ' + e.message + '</span>';
+    }
+  }
+
+  async function showUnsent() {
+    const container = document.getElementById('preview-data');
+    const pre = container.querySelector('pre');
+    container.classList.remove('hidden');
+    pre.textContent = 'Hämtar osynkade fakturor från Blikk... (kan ta en stund)';
+    try {
+      const res = await fetch('/api/preview/unsent');
+      const data = await res.json();
+      pre.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+      pre.textContent = 'Fel: ' + e.message;
+    }
+  }
+
+  async function previewBlikk() {
+    const container = document.getElementById('preview-data');
+    const pre = container.querySelector('pre');
+    container.classList.remove('hidden');
+    pre.textContent = 'Hämtar data från Blikk...';
+    try {
+      const res = await fetch('/api/preview/blikk');
+      const data = await res.json();
+      pre.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+      pre.textContent = 'Fel: ' + e.message;
+    }
+  }
+  </script>
+
+  <!-- Spiris / Visma eEkonomi -->
+  <div class="card p-6">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h3 class="text-sm font-bold text-gray-900">Spiris (Visma eEkonomi)</h3>
+        <p class="text-xs text-gray-400 mt-0.5">OAuth 2.0 — sandbox</p>
+      </div>
+      <% if (vismaToken) { %>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
+          <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>Ansluten
+          <% if (vismaToken.expiresAt) { %>
+            <span class="text-emerald-500 font-normal">(token giltig till <%= new Date(vismaToken.expiresAt).toLocaleString('sv-SE') %>)</span>
+          <% } %>
+        </span>
+      <% } else { %>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">
+          <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>Ej ansluten
+        </span>
+      <% } %>
+    </div>
+
+    <form method="POST" action="/settings/visma">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Client ID</label>
+          <input type="text" name="clientId" value="<%= settings.visma_client_id || '' %>" placeholder="reklamcoinswedenabsandbox">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Client Secret</label>
+          <input type="password" name="clientSecret" value="<%= settings.visma_client_secret || '' %>" placeholder="••••••••">
+        </div>
+      </div>
+      <div class="mt-4 flex items-center gap-3">
+        <button type="submit" class="btn btn-accent text-xs">Spara</button>
+        <a href="/settings/visma/connect" class="btn btn-ghost text-xs">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+          Anslut till Spiris
+        </a>
+        <% if (vismaToken) { %>
+          <button type="button" class="btn btn-ghost text-xs" onclick="testSpiris()">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Testa anslutning
+          </button>
+        <% } %>
+        <span id="spiris-result" class="text-xs"></span>
+      </div>
+    </form>
+  </div>
+
+  <% if (vismaToken) { %>
+  <div class="card p-6">
+    <h3 class="text-sm font-bold text-gray-900 mb-1">Spiris-synkronisering</h3>
+    <p class="text-xs text-gray-400 mb-4">Matcha artiklar och kunder mellan Blikk och Visma</p>
+    <div class="flex items-center gap-3 flex-wrap">
+      <button type="button" class="btn btn-accent text-xs" onclick="syncSpiris('spiris-articles')">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Synka artiklar från Visma
+      </button>
+      <button type="button" class="btn btn-accent text-xs" onclick="syncSpiris('spiris-customers')">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Matcha kunder mot Visma
+      </button>
+    </div>
+    <div id="spiris-sync-result" class="mt-3 text-xs"></div>
+  </div>
+  <% } %>
+
+  <script>
+  async function syncSpiris(type) {
+    var result = document.getElementById('spiris-sync-result');
+    result.innerHTML = '<span class="text-gray-400">Synkar...</span>';
+    try {
+      var res = await fetch('/api/sync/' + type, { method: 'POST' });
+      var data = await res.json();
+      if (data.success) {
+        var parts = [];
+        if (data.total != null) parts.push(data.total + ' totalt från Visma');
+        if (data.matched != null) parts.push(data.matched + ' matchade');
+        if (data.created != null) parts.push(data.created + ' nya');
+        if (data.skipped != null) parts.push(data.skipped + ' hoppades');
+        result.innerHTML = '<span class="text-emerald-600 font-semibold">&check; ' + parts.join(', ') + '</span>';
+      } else {
+        result.innerHTML = '<span class="text-red-600 font-semibold">&cross; ' + data.error + '</span>';
+      }
+    } catch (e) {
+      result.innerHTML = '<span class="text-red-600 font-semibold">&cross; Nätverksfel</span>';
+    }
+  }
+
+  async function testSpiris() {
+    var result = document.getElementById('spiris-result');
+    result.innerHTML = '<span class="text-gray-400">Testar...</span>';
+    try {
+      var res = await fetch('/settings/visma/test', { method: 'POST' });
+      var data = await res.json();
+      if (data.success) {
+        result.innerHTML = '<span class="text-emerald-600 font-semibold">&check; ' + data.info + '</span>';
+      } else {
+        result.innerHTML = '<span class="text-red-600 font-semibold">&cross; ' + data.error + '</span>';
+      }
+    } catch (e) {
+      result.innerHTML = '<span class="text-red-600 font-semibold">&cross; Nätverksfel</span>';
+    }
+  }
+  </script>
+
+  <!-- General -->
+  <div class="card p-6">
+    <h3 class="text-sm font-bold text-gray-900 mb-4">System</h3>
+    <div class="space-y-3 text-sm">
+      <div class="flex items-center justify-between py-2 border-b border-gray-50">
+        <span class="text-gray-500">Version</span>
+        <span class="font-medium text-gray-900">1.0.0</span>
+      </div>
+      <div class="flex items-center justify-between py-2 border-b border-gray-50">
+        <span class="text-gray-500">Node.js</span>
+        <span class="font-medium text-gray-900"><%= process.version %></span>
+      </div>
+      <div class="flex items-center justify-between py-2">
+        <span class="text-gray-500">Databas</span>
+        <span class="font-medium text-gray-900">SQLite (dev) / MySQL (prod)</span>
+      </div>
+    </div>
+  </div>
+</div>

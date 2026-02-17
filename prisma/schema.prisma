@@ -1,0 +1,281 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Customer {
+  id               Int      @id @default(autoincrement())
+  blikkContactId   Int?     @unique @map("blikk_contact_id")
+  vismaCustomerId  String?  @map("visma_customer_id")
+  customerNumber   String   @map("customer_number")
+  name             String
+  orgNumber        String?  @map("org_number")
+  email            String?
+  yourReference    String?  @map("your_reference")
+  ourReference     String?  @map("our_reference")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  invoices              Invoice[]
+  hostingSubscriptions  HostingSubscription[]
+  projects              Project[]
+  billingSplits         ProjectBillingSplit[]
+
+  @@map("customers")
+}
+
+model Article {
+  id              Int      @id @default(autoincrement())
+  articleNumber   String   @unique @map("article_number")
+  name            String
+  vismaArticleId  String?  @map("visma_article_id")
+  serviceType     String   @map("service_type") // marknadskoordinator, supportavtal, webbhotell
+  defaultPrice    Float    @map("default_price")
+  vatRate         Float    @default(25.00) @map("vat_rate")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  invoiceLines             InvoiceLine[]
+  hostingSubscriptionLines HostingSubscriptionLine[]
+  projects                 Project[]
+  projectInvoiceRows       ProjectInvoiceRow[]
+
+  @@map("articles")
+}
+
+model Invoice {
+  id                  Int       @id @default(autoincrement())
+  customerId          Int       @map("customer_id")
+  blikkInvoiceId      Int?      @unique @map("blikk_invoice_id")
+  vismaDraftId        String?   @map("visma_draft_id")
+  vismaInvoiceNumber  String?   @map("visma_invoice_number")
+  serviceType         String    @map("service_type")
+  invoiceMonth        DateTime  @map("invoice_month")
+  monthLabel          String    @map("month_label")
+  fromDate            DateTime? @map("from_date")
+  toDate              DateTime? @map("to_date")
+  scheduledDate       DateTime? @map("scheduled_date")
+  scheduledWeek       Int?      @map("scheduled_week")
+  totalAmount         Float     @map("total_amount")
+  status              String    @default("pending_review")
+  batchId             Int?      @map("batch_id")
+  blikkSyncedAt       DateTime? @map("blikk_synced_at")
+  blikkWritebackAt    DateTime? @map("blikk_writeback_at")
+  vismaExportedAt     DateTime? @map("visma_exported_at")
+  errorMessage        String?   @map("error_message")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  batch        Batch?        @relation(fields: [batchId], references: [id])
+  lines        InvoiceLine[]
+  syncLogs     SyncLog[]
+
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id         Int      @id @default(autoincrement())
+  invoiceId  Int      @map("invoice_id")
+  articleId  Int?     @map("article_id")
+  blikkRowId Int?     @map("blikk_row_id")
+  text       String
+  quantity   Float
+  unitPrice  Float    @map("unit_price")
+  discount   Float    @default(0)
+  lineTotal  Float    @map("line_total")
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  article Article? @relation(fields: [articleId], references: [id])
+
+  @@map("invoice_lines")
+}
+
+model Batch {
+  id            Int      @id @default(autoincrement())
+  invoiceMonth  DateTime @map("invoice_month")
+  weekNumber    Int      @map("week_number")
+  scheduledDate DateTime @map("scheduled_date")
+  invoiceCount  Int      @default(0) @map("invoice_count")
+  totalAmount   Float    @default(0) @map("total_amount")
+  status        String   @default("pending")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  invoices Invoice[]
+  syncLogs SyncLog[]
+
+  @@map("batches")
+}
+
+model HostingSubscription {
+  id              Int      @id @default(autoincrement())
+  customerId      Int      @map("customer_id")
+  domain          String
+  billingInterval String   @map("billing_interval") // monthly, quarterly, semi_annual, annual
+  nextBillingDate DateTime @map("next_billing_date")
+  isActive        Boolean  @default(true) @map("is_active")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  customer Customer                  @relation(fields: [customerId], references: [id])
+  lines    HostingSubscriptionLine[]
+
+  @@map("hosting_subscriptions")
+}
+
+model HostingSubscriptionLine {
+  id             Int      @id @default(autoincrement())
+  subscriptionId Int      @map("subscription_id")
+  articleId      Int      @map("article_id")
+  description    String
+  quantity       Float    @default(1)
+  unitPrice      Float    @map("unit_price")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  subscription HostingSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  article      Article             @relation(fields: [articleId], references: [id])
+
+  @@map("hosting_subscription_lines")
+}
+
+model Project {
+  id              Int       @id @default(autoincrement())
+  blikkProjectId  Int       @unique @map("blikk_project_id")
+  orderNumber     String?   @map("order_number")
+  title           String
+  category        String?
+  categoryColor   String?   @map("category_color")
+  invoiceType     String?   @map("invoice_type") // FixedPrice, Ongoing
+  customerId      Int?      @map("customer_id")
+  status          String?
+  isCompleted     Boolean   @default(false) @map("is_completed")
+  monthlyPrice    Float?    @map("monthly_price")
+  billingInterval String    @default("monthly") @map("billing_interval") // monthly, quarterly, semi_annual, annual
+  invoiceWeek     Int?      @map("invoice_week") // 1-4, suggested/confirmed week
+  articleId          Int?      @map("article_id") // linked article for Visma invoicing
+  startDate          DateTime? @map("start_date")
+  endDate            DateTime? @map("end_date")
+  lastInvoicedMonth  DateTime? @map("last_invoiced_month") // first day of last invoiced month
+  pauseFrom          DateTime? @map("pause_from") // pause invoicing from this date
+  pauseUntil         DateTime? @map("pause_until") // pause invoicing until this date
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  customer       Customer?              @relation(fields: [customerId], references: [id])
+  article        Article?               @relation(fields: [articleId], references: [id])
+  priceOverrides ProjectPriceOverride[]
+  invoiceRows    ProjectInvoiceRow[]
+  billingSplits  ProjectBillingSplit[]
+
+  @@map("projects")
+}
+
+model ProjectInvoiceRow {
+  id          Int      @id @default(autoincrement())
+  projectId   Int      @map("project_id")
+  articleId   Int?     @map("article_id")
+  text        String
+  unitPrice   Float    @map("unit_price")
+  quantity    Float    @default(1)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  project Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  article Article? @relation(fields: [articleId], references: [id])
+
+  @@map("project_invoice_rows")
+}
+
+model ProjectPriceOverride {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  month     DateTime // first day of month, e.g. 2026-02-01
+  price     Float
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, month])
+  @@map("project_price_overrides")
+}
+
+model ProjectBillingSplit {
+  id          Int      @id @default(autoincrement())
+  projectId   Int      @map("project_id")
+  customerId  Int      @map("customer_id")
+  amount        Float
+  label         String?
+  yourReference String?  @map("your_reference")
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@map("project_billing_splits")
+}
+
+model ApiToken {
+  id           Int       @id @default(autoincrement())
+  provider     String
+  accessToken  String    @map("access_token")
+  refreshToken String?   @map("refresh_token")
+  expiresAt    DateTime  @map("expires_at")
+  tokenData    String?   @map("token_data") // JSON string
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("api_tokens")
+}
+
+model SyncLog {
+  id        Int      @id @default(autoincrement())
+  type      String   // blikk_sync, visma_export, blikk_writeback, hosting_generate
+  status    String   // started, completed, failed
+  invoiceId Int?     @map("invoice_id")
+  batchId   Int?     @map("batch_id")
+  details   String?  // JSON string
+  error     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+  batch   Batch?   @relation(fields: [batchId], references: [id])
+
+  @@map("sync_logs")
+}
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}

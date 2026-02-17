@@ -1,0 +1,62 @@
+<%
+function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+const intervalLabels = { monthly: 'Månatlig', quarterly: 'Kvartalsvis', semi_annual: 'Halvår', annual: 'Årligen' };
+%>
+
+<div class="p-7 space-y-5">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-lg font-bold text-gray-900">Webbhotell</h2>
+      <p class="text-xs text-gray-400 mt-0.5">MRR: <%= formatSEK(mrr) %> &middot; <%= activeCount %> aktiva</p>
+    </div>
+    <a href="/hosting" class="btn btn-accent text-xs" x-data x-on:click.prevent="$refs.modal.showModal()">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+      Ny prenumeration
+    </a>
+  </div>
+
+  <div class="card overflow-hidden">
+    <table class="w-full">
+      <thead>
+        <tr class="bg-gray-50/80 border-b border-gray-100">
+          <th>Kund</th>
+          <th>Domän</th>
+          <th>Artiklar</th>
+          <th class="text-right">Belopp</th>
+          <th>Intervall</th>
+          <th>Nästa</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% subscriptions.forEach(sub => { %>
+          <% const subTotal = sub.lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0); %>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50">
+            <td class="font-medium text-gray-900"><%= sub.customer.name %></td>
+            <td><code class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium"><%= sub.domain %></code></td>
+            <td class="text-xs text-gray-500"><%= sub.lines.map(l => l.description).join(', ') %></td>
+            <td class="text-right font-semibold num"><%= formatSEK(subTotal) %></td>
+            <td class="text-gray-500"><%= intervalLabels[sub.billingInterval] || sub.billingInterval %></td>
+            <td class="text-gray-500"><%= new Date(sub.nextBillingDate).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' }) %></td>
+            <td>
+              <% if (sub.isActive) { %>
+                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Aktiv</span>
+              <% } else { %>
+                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Pausad</span>
+              <% } %>
+            </td>
+            <td>
+              <form method="POST" action="/hosting/<%= sub.id %>/toggle" class="inline">
+                <button type="submit" class="text-xs text-gray-400 hover:text-gray-600"><%= sub.isActive ? 'Pausa' : 'Aktivera' %></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+        <% if (subscriptions.length === 0) { %>
+          <tr><td colspan="8" class="text-center text-gray-400 py-8">Inga prenumerationer ännu.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>

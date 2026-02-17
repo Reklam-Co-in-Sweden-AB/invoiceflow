@@ -1,0 +1,482 @@
+<%
+function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+const monthNames = ['Januari','Februari','Mars','April','Maj','Juni','Juli','Augusti','September','Oktober','November','December'];
+function monthLabel(d) { const dt = new Date(d); return monthNames[dt.getMonth()] + ' ' + dt.getFullYear(); }
+
+const intervalLabels = { monthly: 'Månadsvis', quarterly: 'Kvartalsvis', semi_annual: 'Halvårsvis', annual: 'Årsvis' };
+const intervalMonths = { monthly: 1, quarterly: 3, semi_annual: 6, annual: 12 };
+
+// Build upcoming 12 months for price overview
+const upcoming = [];
+const now = new Date();
+for (let i = 0; i < 12; i++) {
+  const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+  const key = d.toISOString().slice(0, 10);
+  const override = overrides.find(o => new Date(o.month).toISOString().slice(0, 10) === key);
+  const intMonths = intervalMonths[project.billingInterval] || 1;
+  // Check if this month should be invoiced based on interval
+  const monthDiff = (d.getFullYear() - now.getFullYear()) * 12 + d.getMonth() - now.getMonth();
+  const shouldInvoice = monthDiff % intMonths === 0;
+  upcoming.push({
+    date: d,
+    label: monthLabel(d),
+    key,
+    price: override ? override.price : project.monthlyPrice,
+    isOverride: !!override,
+    overrideNote: override?.note,
+    overrideId: override?.id,
+    shouldInvoice,
+  });
+}
+%>
+
+<div class="p-7 space-y-6">
+
+  <!-- Back + header -->
+  <div class="flex items-center gap-4">
+    <a href="/projects" class="text-gray-400 hover:text-gray-600 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+    </a>
+    <div class="flex-1 min-w-0">
+      <h2 class="text-lg font-bold text-gray-900"><%= project.title %></h2>
+      <p class="text-xs text-gray-400 mt-0.5">
+        <% if (project.orderNumber) { %>#<%= project.orderNumber %> &middot; <% } %>
+        <%= project.customer ? project.customer.name : 'Ingen kund' %>
+        <% if (project.category) { %> &middot; <%= project.category %><% } %>
+      </p>
+    </div>
+  </div>
+
+  <!-- Settings cards row -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+    <!-- Pricing -->
+    <div class="card p-5" x-data="{ price: '<%= project.monthlyPrice || '' %>', interval: '<%= project.billingInterval %>', saving: false }">
+      <h3 class="text-sm font-bold text-gray-900 mb-3">Fakturering</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Pris/mån</label>
+          <input type="number" x-model="price" step="50"
+            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 num focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Faktureringsintervall</label>
+          <select x-model="interval" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2">
+            <option value="monthly">Månadsvis</option>
+            <option value="quarterly">Kvartalsvis</option>
+            <option value="semi_annual">Halvårsvis</option>
+            <option value="annual">Årsvis</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Artikel (Visma)</label>
+          <select name="articleId"
+            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2"
+            x-ref="articleSelect">
+            <option value="">Ingen kopplad</option>
+            <% articles.forEach(art => { %>
+              <option value="<%= art.id %>" <%= project.articleId === art.id ? 'selected' : '' %>><%= art.articleNumber %> — <%= art.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <button
+          :disabled="saving"
+          @click="saving=true; fetch('/api/projects/<%= project.id %>/settings', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ monthlyPrice: price, billingInterval: interval, articleId: $refs.articleSelect.value || null }) }).then(() => location.reload())"
+          class="btn btn-accent text-xs w-full">
+          <span x-show="!saving">Spara</span>
+          <span x-show="saving">Sparar...</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Dates & Status -->
+    <div class="card p-5" x-data="{
+      status: '<%= project.status || 'Att göra' %>',
+      endDate: '<%= project.endDate ? new Date(project.endDate).toISOString().slice(0,10) : '' %>',
+      pauseFrom: '<%= project.pauseFrom ? new Date(project.pauseFrom).toISOString().slice(0,10) : '' %>',
+      pauseUntil: '<%= project.pauseUntil ? new Date(project.pauseUntil).toISOString().slice(0,10) : '' %>',
+      statusSaving: false,
+      statusMsg: '',
+      showPause: <%= project.pauseFrom ? 'true' : 'false' %>,
+    }">
+      <h3 class="text-sm font-bold text-gray-900 mb-3">Status</h3>
+      <div class="space-y-3">
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500">Typ</span>
+          <span class="font-medium"><%= project.invoiceType === 'FixedPrice' ? 'Fastpris' : project.invoiceType === 'Ongoing' ? 'Löpande' : project.invoiceType || '—' %></span>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Status (synkas till Blikk)</label>
+          <div class="flex gap-2">
+            <select x-model="status" class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2">
+              <option value="Att göra">Att göra</option>
+              <option value="Pågående">Pågående</option>
+              <option value="Avslutad">Avslutad</option>
+            </select>
+            <button
+              :disabled="statusSaving"
+              @click="statusSaving=true; statusMsg=''; fetch('/api/projects/<%= project.id %>/status', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ status }) }).then(r=>r.json()).then(d => { statusSaving=false; if(d.success) location.reload(); else statusMsg=d.error; }).catch(e => { statusSaving=false; statusMsg=e.message; })"
+              class="btn btn-ghost text-xs">
+              <span x-show="!statusSaving">Ändra</span>
+              <span x-show="statusSaving">...</span>
+            </button>
+          </div>
+          <div x-show="statusMsg" class="text-xs text-red-500 mt-1" x-text="statusMsg"></div>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500">Startdatum</span>
+          <span class="font-medium num"><%= project.startDate ? new Date(project.startDate).toLocaleDateString('sv-SE') : '—' %></span>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Slutdatum</label>
+          <div class="flex gap-2">
+            <input type="date" x-model="endDate"
+              class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 num focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button
+              @click="fetch('/api/projects/<%= project.id %>/settings', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ endDate: endDate || null }) }).then(() => location.reload())"
+              class="btn btn-ghost text-xs">Spara</button>
+          </div>
+        </div>
+        <% if (project.invoiceWeek) { %>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Fakturavecka</span>
+            <span class="font-bold text-blue-700">V.<%= project.invoiceWeek %></span>
+          </div>
+        <% } %>
+
+        <!-- Pause invoicing -->
+        <div class="border-t border-gray-100 pt-3">
+          <button @click="showPause = !showPause" class="text-xs font-semibold text-amber-600 hover:text-amber-800 flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <%= project.pauseFrom ? 'Pausad' : 'Pausa fakturering' %>
+          </button>
+          <div x-show="showPause" class="mt-2 space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-0.5">Från</label>
+                <input type="date" x-model="pauseFrom" class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 num">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-0.5">Till</label>
+                <input type="date" x-model="pauseUntil" class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 num">
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button
+                @click="fetch('/api/projects/<%= project.id %>/pause', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ pauseFrom: pauseFrom || null, pauseUntil: pauseUntil || null }) }).then(() => location.reload())"
+                class="btn btn-ghost text-xs flex-1">Spara paus</button>
+              <% if (project.pauseFrom) { %>
+                <button
+                  @click="fetch('/api/projects/<%= project.id %>/pause', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ pauseFrom: null, pauseUntil: null }) }).then(() => location.reload())"
+                  class="btn btn-ghost text-xs text-red-500">Ta bort paus</button>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Send to Visma -->
+    <%
+      const hasSplits = project.billingSplits && project.billingSplits.length > 0;
+      const canSend = hasSplits
+        ? project.article?.vismaArticleId && project.billingSplits.every(s => s.customer.vismaCustomerId)
+        : project.monthlyPrice && project.customer && project.article?.vismaArticleId;
+    %>
+    <div class="card p-5" x-data="{ sending: false, result: '', error: '' }">
+      <h3 class="text-sm font-bold text-gray-900 mb-3">Skicka till Visma</h3>
+      <% if (hasSplits) { %>
+        <p class="text-xs text-gray-400 mb-4">Skapar <%= project.billingSplits.length %> fakturautkast i Spiris (delad fakturering).</p>
+      <% } else { %>
+        <p class="text-xs text-gray-400 mb-4">Skapar ett fakturautkast i Spiris för innevarande period.</p>
+      <% } %>
+      <div class="space-y-3">
+        <div class="text-sm">
+          <% if (hasSplits) { %>
+            <% project.billingSplits.forEach(split => { %>
+              <div class="flex justify-between mb-1">
+                <span class="text-gray-500"><%= split.customer.name %></span>
+                <span class="font-bold num"><%= formatSEK(split.amount) %></span>
+              </div>
+            <% }) %>
+            <div class="flex justify-between border-t border-gray-100 pt-1 mt-1">
+              <span class="text-gray-500 font-semibold">Totalt</span>
+              <span class="font-bold num"><%= formatSEK(project.billingSplits.reduce((s, sp) => s + sp.amount, 0)) %></span>
+            </div>
+          <% } else { %>
+            <div class="flex justify-between mb-1">
+              <span class="text-gray-500">Kund</span>
+              <span class="font-medium"><%= project.customer?.name || 'Saknas' %></span>
+            </div>
+            <div class="flex justify-between mb-1">
+              <span class="text-gray-500">Belopp</span>
+              <span class="font-bold num"><%= project.monthlyPrice ? formatSEK(project.monthlyPrice) : '—' %></span>
+            </div>
+          <% } %>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Artikel</span>
+            <span class="font-medium"><%= project.article ? project.article.articleNumber + ' — ' + project.article.name : 'Ej kopplad' %></span>
+          </div>
+        </div>
+
+        <% if (!canSend) { %>
+          <div class="text-xs text-amber-600 bg-amber-50 rounded-lg p-2">
+            <% if (!hasSplits && !project.monthlyPrice) { %>Sätt pris först. <% } %>
+            <% if (!hasSplits && !project.customer) { %>Ingen kund kopplad. <% } %>
+            <% if (!project.article?.vismaArticleId) { %>Koppla en artikel med Visma-ID. <% } %>
+          </div>
+        <% } %>
+
+        <button
+          :disabled="sending || <%= !canSend %>"
+          @click="sending=true; error=''; result=''; fetch('/api/projects/<%= project.id %>/send-to-visma', { method:'POST', headers:{'Content-Type':'application/json'} }).then(r=>r.json()).then(d => { sending=false; if(d.success) result=d.info; else error=d.error; }).catch(e => { sending=false; error=e.message; })"
+          class="btn btn-accent text-xs w-full <%= canSend ? '' : 'opacity-50 cursor-not-allowed' %>">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          <span x-show="!sending"><%= hasSplits ? 'Skapa ' + project.billingSplits.length + ' fakturautkast' : 'Skapa fakturautkast' %></span>
+          <span x-show="sending">Skickar...</span>
+        </button>
+        <div x-show="result" class="text-xs text-emerald-600 font-semibold" x-text="result"></div>
+        <div x-show="error" class="text-xs text-red-600 font-semibold" x-text="error"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Monthly price overview (12 months) -->
+  <div class="card p-5">
+    <h3 class="text-sm font-bold text-gray-900 mb-4">Prisöversikt — kommande 12 månader</h3>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+      <% upcoming.forEach(m => { %>
+        <div x-data="{ editing: false, val: '<%= m.price || '' %>', note: '<%= (m.overrideNote || '').replace(/'/g, "\\'") %>' }"
+          class="rounded-lg p-3 text-center transition-colors
+            <%= !m.shouldInvoice ? 'bg-gray-50 opacity-50' : m.isOverride ? 'bg-amber-50 border border-amber-200' : m.price ? 'bg-blue-50' : 'bg-gray-50' %>">
+
+          <div class="text-[11px] font-semibold text-gray-500 mb-1"><%= m.label %></div>
+          <% if (!m.shouldInvoice) { %>
+            <div class="text-xs text-gray-400">Ej faktureringsmånad</div>
+          <% } else { %>
+            <div x-show="!editing" @click="editing = true" class="cursor-pointer">
+              <div class="text-sm font-bold num <%= m.price ? (m.isOverride ? 'text-amber-700' : 'text-blue-700') : 'text-gray-300' %>">
+                <%= m.price ? formatSEK(m.price) : '—' %>
+              </div>
+              <% if (m.isOverride && m.overrideNote) { %>
+                <div class="text-[10px] text-amber-600 mt-0.5"><%= m.overrideNote %></div>
+              <% } %>
+              <div class="text-[10px] text-gray-400 mt-0.5"><%= m.isOverride ? 'Undantag' : 'Standardpris' %></div>
+            </div>
+            <div x-show="editing" class="space-y-1" @keydown.escape="editing = false">
+              <input type="number" x-model="val" step="50"
+                class="w-full text-sm text-center border border-gray-200 rounded px-2 py-1 num focus:outline-none focus:ring-2 focus:ring-blue-500"
+                x-init="$watch('editing', v => { if(v) $nextTick(() => $el.focus()) })">
+              <input type="text" x-model="note" placeholder="Anteckning..."
+                class="w-full text-xs text-center border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <div class="flex gap-1">
+                <button @click="fetch('/api/projects/<%= project.id %>/price-override', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ month:'<%= m.key %>', price:val, note:note }) }).then(() => location.reload())"
+                  class="flex-1 text-[10px] font-semibold bg-blue-600 text-white rounded py-1 hover:bg-blue-700">Spara</button>
+                <% if (m.isOverride) { %>
+                  <button @click="fetch('/api/projects/<%= project.id %>/price-override/<%= m.overrideId %>', { method:'DELETE' }).then(() => location.reload())"
+                    class="text-[10px] font-semibold bg-red-50 text-red-600 rounded py-1 px-2 hover:bg-red-100">Ta bort</button>
+                <% } %>
+              </div>
+            </div>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- Billing splits -->
+  <div class="card p-5" x-data="{
+    splits: <%= JSON.stringify(project.billingSplits.map(s => ({ id: s.id, customerId: s.customerId, amount: s.amount, label: s.label, yourReference: s.yourReference, showRef: !!s.yourReference, customerName: s.customer.name }))) %>,
+    splitSum() { return this.splits.reduce((s, sp) => s + sp.amount, 0); },
+    async addSplit() {
+      const resp = await fetch('/api/projects/<%= project.id %>/splits', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ customerId: <%= vismaCustomers.length > 0 ? vismaCustomers[0].id : 'null' %>, amount: 0 }) });
+      const s = await resp.json(); this.splits.push({ id: s.id, customerId: s.customerId, amount: s.amount, label: s.label, yourReference: s.yourReference, showRef: false, customerName: s.customer.name });
+    },
+    async updateSplit(id, data) {
+      const resp = await fetch('/api/projects/<%= project.id %>/splits/' + id, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+      const u = await resp.json(); const sp = this.splits.find(s => s.id === id);
+      if (sp) { if (data.customerId !== undefined) { sp.customerId = Number(data.customerId); sp.customerName = u.customer.name; } if (data.amount !== undefined) sp.amount = parseFloat(data.amount); if (data.label !== undefined) sp.label = data.label || null; if (data.yourReference !== undefined) sp.yourReference = data.yourReference || null; }
+    },
+    async deleteSplit(id) { await fetch('/api/projects/<%= project.id %>/splits/' + id, { method: 'DELETE' }); this.splits = this.splits.filter(s => s.id !== id); }
+  }">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-sm font-bold text-gray-900">Delad fakturering</h3>
+        <p class="text-xs text-gray-400">Fördela fakturering mellan flera kunder. Lämna tomt för vanlig fakturering.</p>
+      </div>
+      <button @click="addSplit()" class="btn btn-ghost text-xs">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        Lägg till split
+      </button>
+    </div>
+
+    <template x-for="split in splits" :key="split.id">
+      <div class="border border-gray-100 rounded-lg p-3 mb-2">
+        <div class="flex items-start gap-2">
+          <div class="flex-1 space-y-2">
+            <div class="grid grid-cols-3 gap-2">
+              <div x-data="{ open: false, q: '' }" @click.away="open = false" class="relative">
+                <label class="block text-[10px] text-gray-500 mb-0.5">Kund</label>
+                <button type="button" @click="open = !open; if(open) $nextTick(() => $refs['cq_' + split.id].focus())"
+                  class="w-full text-left text-xs border border-gray-200 rounded px-2 py-1.5 bg-white flex items-center justify-between gap-1 hover:border-gray-300 transition-colors">
+                  <span x-text="split.customerName || 'Välj kund...'" class="truncate"></span>
+                  <svg class="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div x-show="open" x-transition class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-hidden">
+                  <div class="p-1.5 border-b border-gray-100">
+                    <input type="text" x-model="q" :x-ref="'cq_' + split.id" placeholder="Sök kund..."
+                      @keydown.escape="open = false"
+                      class="w-full text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  <div class="overflow-y-auto max-h-36">
+                    <% vismaCustomers.forEach(c => { %>
+                      <button type="button"
+                        x-show="!q || '<%= c.name.toLowerCase().replace(/'/g, "\\'") %>'.includes(q.toLowerCase())"
+                        @click="updateSplit(split.id, { customerId: '<%= c.id %>' }); split.customerId = <%= c.id %>; split.customerName = '<%= c.name.replace(/'/g, "\\'") %>'; open = false; q = '';"
+                        class="w-full text-left text-xs px-2 py-1.5 hover:bg-blue-50 transition-colors"
+                        :class="split.customerId === <%= c.id %> && 'bg-blue-50 font-semibold text-blue-700'">
+                        <%= c.name %>
+                      </button>
+                    <% }) %>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-0.5">Belopp</label>
+                <input type="number" :value="split.amount" step="50"
+                  @change="updateSplit(split.id, { amount: $event.target.value })"
+                  class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 num">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-0.5">Benämning (valfri)</label>
+                <input type="text" :value="split.label || ''"
+                  @change="updateSplit(split.id, { label: $event.target.value })"
+                  class="w-full text-xs border border-gray-200 rounded px-2 py-1.5"
+                  placeholder="Projektnamn + period om tomt">
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" class="rounded border-gray-300"
+                  :checked="split.showRef" @change="split.showRef = $event.target.checked; if(!$event.target.checked) updateSplit(split.id, { yourReference: '' })">
+                <span class="text-[10px] text-gray-500">Er orderreferens</span>
+              </label>
+              <div x-show="split.showRef" class="flex-1">
+                <input type="text" :value="split.yourReference || ''"
+                  @change="updateSplit(split.id, { yourReference: $event.target.value })"
+                  class="w-full text-xs border border-gray-200 rounded px-2 py-1.5"
+                  placeholder="Orderreferens...">
+              </div>
+            </div>
+          </div>
+          <button @click="deleteSplit(split.id)" class="text-gray-300 hover:text-red-500 transition-colors mt-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <!-- Sum vs monthlyPrice comparison -->
+    <div x-show="splits.length > 0" class="border-t border-gray-100 pt-3 mt-2">
+      <div class="flex justify-between items-center">
+        <span class="text-xs text-gray-500">Summa splitar</span>
+        <span class="text-sm font-bold num" :class="splitSum() === <%= project.monthlyPrice || 0 %> ? 'text-emerald-600' : 'text-amber-600'" x-text="splitSum().toLocaleString('sv-SE') + ' kr'"></span>
+      </div>
+      <div x-show="splitSum() !== <%= project.monthlyPrice || 0 %>" class="text-[10px] text-amber-600 mt-1">
+        Splitsum (<span x-text="splitSum().toLocaleString('sv-SE')"></span> kr) matchar inte månadspris (<%= formatSEK(project.monthlyPrice || 0) %>)
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoice rows -->
+  <div class="card p-5" x-data="{
+    rows: <%= JSON.stringify(project.invoiceRows.map(r => ({ id: r.id, articleId: r.articleId, text: r.text, unitPrice: r.unitPrice, quantity: r.quantity }))) %>,
+    totalAmount() { return <%= project.monthlyPrice || 0 %> + this.rows.reduce((s, r) => s + r.unitPrice * r.quantity, 0); },
+    async addRow() {
+      const resp = await fetch('/api/projects/<%= project.id %>/rows', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ text: '', unitPrice: 0, quantity: 1 }) });
+      const r = await resp.json(); this.rows.push({ id: r.id, articleId: r.articleId, text: r.text, unitPrice: r.unitPrice, quantity: r.quantity });
+    },
+    async updateRow(id, data) {
+      await fetch('/api/projects/<%= project.id %>/rows/' + id, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+      const r = this.rows.find(x => x.id === id); if (r) { Object.assign(r, data); if (data.unitPrice !== undefined) r.unitPrice = parseFloat(data.unitPrice); if (data.quantity !== undefined) r.quantity = parseFloat(data.quantity); }
+    },
+    async deleteRow(id) { await fetch('/api/projects/<%= project.id %>/rows/' + id, { method: 'DELETE' }); this.rows = this.rows.filter(r => r.id !== id); }
+  }">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-sm font-bold text-gray-900">Fakturarader</h3>
+        <p class="text-xs text-gray-400">Extra rader som skickas med varje faktura utöver huvudraden.</p>
+      </div>
+      <button @click="addRow()" class="btn btn-ghost text-xs">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        Lägg till rad
+      </button>
+    </div>
+
+    <!-- Main row (read-only preview) -->
+    <div class="border border-gray-100 rounded-lg p-3 mb-2 bg-gray-50/50">
+      <div class="flex items-center gap-3 text-sm">
+        <span class="text-[10px] font-bold text-gray-400 uppercase w-14">Huvudrad</span>
+        <span class="flex-1 font-medium text-gray-700"><%= project.article ? project.article.articleNumber + ' — ' + project.article.name : 'Ej kopplad' %></span>
+        <span class="num font-semibold text-gray-900"><%= project.monthlyPrice ? formatSEK(project.monthlyPrice) : '—' %></span>
+      </div>
+    </div>
+
+    <!-- Extra rows -->
+    <template x-for="row in rows" :key="row.id">
+      <div class="border border-gray-100 rounded-lg p-3 mb-2">
+        <div class="flex items-start gap-2">
+          <div class="flex-1 space-y-2">
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-0.5">Artikel</label>
+                <select :value="row.articleId || ''" @change="updateRow(row.id, { articleId: $event.target.value })"
+                  class="w-full text-xs border border-gray-200 rounded px-2 py-1.5">
+                  <option value="">Samma som huvudrad</option>
+                  <% articles.forEach(art => { %>
+                    <option value="<%= art.id %>"><%= art.articleNumber %> — <%= art.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-0.5">Pris</label>
+                <input type="number" :value="row.unitPrice" step="50"
+                  @change="updateRow(row.id, { unitPrice: $event.target.value })"
+                  class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 num">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-0.5">Antal</label>
+                <input type="number" :value="row.quantity" step="1"
+                  @change="updateRow(row.id, { quantity: $event.target.value })"
+                  class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 num">
+              </div>
+            </div>
+            <div>
+              <label class="block text-[10px] text-gray-500 mb-0.5">Benämning (på fakturan)</label>
+              <input type="text" :value="row.text"
+                @change="updateRow(row.id, { text: $event.target.value })"
+                class="w-full text-xs border border-gray-200 rounded px-2 py-1.5"
+                placeholder="T.ex. Nyhetsbrevstjänst — februari 2026">
+            </div>
+          </div>
+          <button @click="deleteRow(row.id)" class="text-gray-300 hover:text-red-500 transition-colors mt-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="text-right mt-1">
+          <span class="text-xs num font-semibold text-gray-600" x-text="(row.unitPrice * row.quantity).toLocaleString('sv-SE') + ' kr'"></span>
+        </div>
+      </div>
+    </template>
+
+    <!-- Total -->
+    <div x-show="rows.length > 0" class="border-t border-gray-100 pt-3 mt-2 flex justify-between items-center">
+      <span class="text-xs text-gray-500">Totalt per faktura</span>
+      <span class="text-sm font-bold num text-gray-900" x-text="totalAmount().toLocaleString('sv-SE') + ' kr'"></span>
+    </div>
+
+  </div>
+
+</div>
+

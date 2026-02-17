@@ -1,0 +1,64 @@
+<%
+function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+function statusPill(s) {
+  const map = {
+    pending_review: ['pill-pending', 'Väntar'],
+    approved: ['pill-approved', 'Godkänd'],
+    scheduled: ['pill-scheduled', 'Schemalagd'],
+    exporting: ['pill-exported', 'Exporterar'],
+    exported: ['pill-exported', 'Exporterad'],
+    confirmed: ['pill-confirmed', 'Bekräftad'],
+    failed: ['pill-failed', 'Misslyckad'],
+    skipped: ['pill-skipped', 'Hoppad'],
+  };
+  const [cls, label] = map[s] || ['pill-pending', s];
+  return '<span class="pill ' + cls + '">' + label + '</span>';
+}
+%>
+
+<div class="p-7 space-y-5">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-lg font-bold text-gray-900">Alla fakturor</h2>
+      <p class="text-xs text-gray-400 mt-0.5"><%= invoices.length %> fakturor</p>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden">
+    <table class="w-full">
+      <thead>
+        <tr class="bg-gray-50/80 border-b border-gray-100">
+          <th>#</th>
+          <th>Kund</th>
+          <th>Tjänst</th>
+          <th>Månad</th>
+          <th class="text-right">Belopp</th>
+          <th>Batch</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% invoices.forEach(inv => { %>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50">
+            <td class="text-gray-300 num"><%= inv.id %></td>
+            <td class="font-medium text-gray-900"><%= inv.customer.name %></td>
+            <td class="text-gray-500"><%= inv.serviceType === 'marknadskoordinator' ? 'Marknadskoord.' : inv.serviceType === 'supportavtal' ? 'Supportavtal' : 'Webbhotell' %></td>
+            <td class="text-gray-500"><%= inv.monthLabel %></td>
+            <td class="text-right font-semibold num"><%= formatSEK(inv.totalAmount) %></td>
+            <td>
+              <% if (inv.batch) { %>
+                <span class="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">V.<%= inv.batch.weekNumber %></span>
+              <% } else { %>
+                <span class="text-xs text-gray-300">&mdash;</span>
+              <% } %>
+            </td>
+            <td><%- statusPill(inv.status) %></td>
+          </tr>
+        <% }) %>
+        <% if (invoices.length === 0) { %>
+          <tr><td colspan="7" class="text-center text-gray-400 py-8">Inga fakturor ännu. Kör en Blikk-synk för att hämta fakturor.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>

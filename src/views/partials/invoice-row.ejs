@@ -1,0 +1,13 @@
+<%
+function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+%>
+
+<div class="flex items-center justify-between text-xs">
+  <div>
+    <% if (line.article) { %>
+      <span class="text-gray-400 font-mono">Art.<%= line.article.articleNumber %></span>
+    <% } %>
+    <span class="text-gray-700 font-medium ml-1"><%= line.text %></span>
+  </div>
+  <div class="num text-gray-500"><%= line.quantity %> st × <%= formatSEK(line.unitPrice) %></div>
+</div>

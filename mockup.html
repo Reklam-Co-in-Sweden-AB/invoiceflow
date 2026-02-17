@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FakturaFlöde</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+      colors: {
+        sidebar: { 900: '#0c0f1a', 800: '#111427', 700: '#1a1e35', 600: '#252a45' },
+        accent: { 50: '#eef4ff', 100: '#d9e5ff', 200: '#bcd2ff', 300: '#8eb5ff', 400: '#598eff', 500: '#3366ff', 600: '#1a4fff', 700: '#1040e6', 800: '#1336ba' },
+      }
+    }
+  }
+}
+</script>
+<style>
+body { font-family: 'Inter', system-ui, sans-serif; }
+* { -webkit-font-smoothing: antialiased; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Sidebar */
+.nav-link { display:flex; align-items:center; gap:0.7rem; padding:0.55rem 0.85rem; border-radius:0.5rem; font-size:0.8125rem; font-weight:500; color:rgba(255,255,255,0.5); transition:all 0.15s; }
+.nav-link:hover { color:rgba(255,255,255,0.85); background:rgba(255,255,255,0.06); }
+.nav-link.active { color:#fff; background:rgba(51,102,255,0.2); box-shadow:inset 3px 0 0 #3366ff; }
+.nav-label { font-size:0.625rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:rgba(255,255,255,0.25); padding:1.2rem 0.85rem 0.3rem; }
+
+/* Cards */
+.card { background:#fff; border-radius:0.875rem; border:1px solid #e5e7eb; box-shadow:0 1px 2px rgba(0,0,0,0.04); transition:box-shadow 0.2s, transform 0.2s; }
+.card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.06); }
+.stat-card { position:relative; overflow:hidden; }
+.stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.stat-card.blue::before { background:linear-gradient(90deg,#3366ff,#598eff); }
+.stat-card.green::before { background:linear-gradient(90deg,#10b981,#34d399); }
+.stat-card.amber::before { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
+.stat-card.purple::before { background:linear-gradient(90deg,#8b5cf6,#a78bfa); }
+
+/* Badges */
+.pill { display:inline-flex; align-items:center; gap:0.35rem; padding:0.2rem 0.65rem; border-radius:9999px; font-size:0.6875rem; font-weight:600; letter-spacing:0.01em; }
+.pill-pending { background:#fef3c7; color:#92400e; }
+.pill-approved { background:#dbeafe; color:#1e40af; }
+.pill-exported { background:#d1fae5; color:#065f46; }
+.pill-scheduled { background:#ede9fe; color:#5b21b6; }
+.pill-failed { background:#fee2e2; color:#991b1b; }
+.pill-confirmed { background:#ecfdf5; color:#064e3b; }
+.pill::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.pill-pending::before { background:#d97706; }
+.pill-approved::before { background:#2563eb; }
+.pill-exported::before { background:#059669; }
+.pill-scheduled::before { background:#7c3aed; }
+.pill-failed::before { background:#dc2626; }
+.pill-confirmed::before { background:#047857; }
+
+/* Buttons */
+.btn { display:inline-flex; align-items:center; gap:0.45rem; padding:0.5rem 1rem; border-radius:0.5rem; font-size:0.8125rem; font-weight:600; transition:all 0.15s; cursor:pointer; outline:none; border:none; }
+.btn-accent { background:#3366ff; color:#fff; box-shadow:0 1px 3px rgba(51,102,255,0.3); }
+.btn-accent:hover { background:#1a4fff; box-shadow:0 4px 12px rgba(51,102,255,0.35); transform:translateY(-1px); }
+.btn-ghost { background:#fff; color:#374151; border:1px solid #e5e7eb; }
+.btn-ghost:hover { background:#f9fafb; border-color:#d1d5db; }
+
+/* Table */
+.th { padding:0.65rem 1rem; text-align:left; font-size:0.6875rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9ca3af; }
+.td { padding:0.75rem 1rem; font-size:0.8125rem; color:#374151; }
+
+/* Toast */
+.toast { transform:translateY(120%); opacity:0; transition:all 0.35s cubic-bezier(0.22,1,0.36,1); }
+.toast.show { transform:translateY(0); opacity:1; }
+
+/* Page fade */
+.page { animation:fadeUp 0.25s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* Timeline dot pulse */
+@keyframes pulse-dot { 0%,100% { box-shadow:0 0 0 0 rgba(16,185,129,0.4); } 50% { box-shadow:0 0 0 4px rgba(16,185,129,0); } }
+.dot-pulse { animation: pulse-dot 2s ease infinite; }
+
+/* Modal */
+.modal-backdrop { opacity:0; transition:opacity 0.25s; }
+.modal-backdrop.show { opacity:1; }
+.modal-panel { transform:translateY(16px) scale(0.98); opacity:0; transition:all 0.3s cubic-bezier(0.22,1,0.36,1); }
+.modal-backdrop.show .modal-panel { transform:translateY(0) scale(1); opacity:1; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:#9ca3af; }
+</style>
+</head>
+<body class="bg-[#f5f6f8] min-h-screen">
+<div class="flex min-h-screen">
+
+<!-- ==================== SIDEBAR ==================== -->
+<aside class="w-[240px] bg-sidebar-900 flex flex-col fixed inset-y-0 left-0 z-30">
+  <div class="flex items-center gap-2.5 px-5 h-16 border-b border-white/[0.06]">
+    <div class="w-7 h-7 rounded-lg bg-accent-500 flex items-center justify-center">
+      <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+    </div>
+    <span class="text-sm font-bold text-white tracking-tight">FakturaFlöde</span>
+  </div>
+  <nav class="flex-1 px-3 pt-2 overflow-y-auto">
+    <div class="nav-label">Översikt</div>
+    <a href="#" onclick="showPage('dashboard')" class="nav-link active" data-page="dashboard">
+      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <div class="nav-label">Fakturering</div>
+    <a href="#" onclick="showPage('review')" class="nav-link" data-page="review">
+      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+      Granska
+    </a>
+    <a href="#" onclick="showPage('invoices')" class="nav-link" data-page="invoices">
+      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Alla fakturor
+    </a>
+    <a href="#" onclick="showPage('batches')" class="nav-link" data-page="batches">
+      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      Batcher
+    </a>
+    <div class="nav-label">Hantering</div>
+    <a href="#" onclick="showPage('hosting')" class="nav-link" data-page="hosting">
+      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+      Webbhotell
+    </a>
+    <a href="#" onclick="showPage('customers')" class="nav-link" data-page="customers">
+      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Kunder
+    </a>
+    <div class="nav-label">System</div>
+    <a href="#" onclick="showPage('settings')" class="nav-link" data-page="settings">
+      <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+      Inställningar
+    </a>
+  </nav>
+  <div class="px-4 py-3.5 border-t border-white/[0.06]">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center text-[11px] font-bold text-white">OA</div>
+      <div class="flex-1 min-w-0"><div class="text-[13px] font-semibold text-white/90 truncate">Oliver A.</div><div class="text-[11px] text-white/30">Admin</div></div>
+      <svg class="w-4 h-4 text-white/20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
+    </div>
+  </div>
+</aside>
+
+<!-- ==================== MAIN ==================== -->
+<main class="flex-1 ml-[240px]">
+  <!-- Top bar -->
+  <header class="sticky top-0 z-20 h-14 bg-white/70 backdrop-blur-xl border-b border-gray-200/60 flex items-center justify-between px-7">
+    <h1 id="page-title" class="text-[15px] font-semibold text-gray-900">Dashboard</h1>
+    <div class="flex items-center gap-2.5">
+      <div id="sync-indicator" class="hidden items-center gap-2 text-[12px] text-accent-600 bg-accent-50 px-3 py-1.5 rounded-lg font-medium">
+        <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+        Synkroniserar...
+      </div>
+      <button onclick="triggerSync()" class="btn btn-ghost text-[12px]">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Synka Blikk
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== DASHBOARD ==================== -->
+  <div id="page-dashboard" class="page p-7 space-y-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <button onclick="changeMonth(-1)" class="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <h2 id="current-month" class="text-lg font-bold text-gray-900 min-w-[120px] text-center">Mars 2026</h2>
+        <button onclick="changeMonth(1)" class="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="flex items-center gap-1.5 text-[12px] text-gray-400">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+        Synkad idag 09:32
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-4 gap-4">
+      <div class="card stat-card blue p-5">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[12px] font-medium text-gray-500">Fakturor</span>
+          <div class="w-8 h-8 rounded-lg bg-accent-50 flex items-center justify-center"><svg class="w-4 h-4 text-accent-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+        </div>
+        <div class="text-[26px] font-extrabold text-gray-900 num leading-none">142</div>
+        <div class="text-[12px] text-gray-400 mt-1 num">847 200 kr totalt</div>
+      </div>
+      <div class="card stat-card green p-5">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[12px] font-medium text-gray-500">Godkända</span>
+          <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center"><svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
+        </div>
+        <div class="text-[26px] font-extrabold text-gray-900 num leading-none">98</div>
+        <div class="text-[12px] text-gray-400 mt-1 num">612 000 kr</div>
+      </div>
+      <div class="card stat-card amber p-5">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[12px] font-medium text-gray-500">Väntar granskning</span>
+          <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center"><svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+        </div>
+        <div class="text-[26px] font-extrabold text-gray-900 num leading-none">44</div>
+        <div class="text-[12px] text-gray-400 mt-1 num">235 200 kr</div>
+      </div>
+      <div class="card stat-card purple p-5">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[12px] font-medium text-gray-500">Webbhotell MRR</span>
+          <div class="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center"><svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg></div>
+        </div>
+        <div class="text-[26px] font-extrabold text-gray-900 num leading-none">38 420 <span class="text-[15px] font-bold text-gray-400">kr</span></div>
+        <div class="text-[12px] text-gray-400 mt-1">24 aktiva</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-3 gap-5">
+      <div class="col-span-2 card p-5">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-[13px] font-semibold text-gray-900">Veckofördelning</h3>
+          <span class="text-[11px] font-medium text-gray-400 num">Ideal: 211 800 kr/vecka</span>
+        </div>
+        <div class="h-56"><canvas id="weeklyChart"></canvas></div>
+      </div>
+      <div class="card p-5">
+        <h3 class="text-[13px] font-semibold text-gray-900 mb-1">Prognos</h3>
+        <div class="h-56"><canvas id="projectionChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Activity + Pending -->
+    <div class="grid grid-cols-5 gap-5">
+      <div class="col-span-2 card p-5">
+        <h3 class="text-[13px] font-semibold text-gray-900 mb-4">Aktivitet</h3>
+        <div class="relative pl-4 space-y-4">
+          <div class="absolute left-[5px] top-2 bottom-2 w-px bg-gray-100"></div>
+          <div class="flex items-start gap-3 relative"><div class="w-[11px] h-[11px] rounded-full bg-emerald-400 border-2 border-white shadow-sm flex-shrink-0 -ml-[5.5px] mt-0.5 dot-pulse"></div><div><div class="text-[12px] font-semibold text-gray-800">Blikk-synk klar</div><div class="text-[11px] text-gray-400">142 ofakturerade hämtade — idag 09:32</div></div></div>
+          <div class="flex items-start gap-3 relative"><div class="w-[11px] h-[11px] rounded-full bg-accent-400 border-2 border-white shadow-sm flex-shrink-0 -ml-[5.5px] mt-0.5"></div><div><div class="text-[12px] font-semibold text-gray-800">V.1 &rarr; Visma</div><div class="text-[11px] text-gray-400">36 drafts skapade — igår 14:15</div></div></div>
+          <div class="flex items-start gap-3 relative"><div class="w-[11px] h-[11px] rounded-full bg-cyan-400 border-2 border-white shadow-sm flex-shrink-0 -ml-[5.5px] mt-0.5"></div><div><div class="text-[12px] font-semibold text-gray-800">V.1 &rarr; Blikk bekräftad</div><div class="text-[11px] text-gray-400">36 markerade som skickade — igår 14:16</div></div></div>
+          <div class="flex items-start gap-3 relative"><div class="w-[11px] h-[11px] rounded-full bg-purple-400 border-2 border-white shadow-sm flex-shrink-0 -ml-[5.5px] mt-0.5"></div><div><div class="text-[12px] font-semibold text-gray-800">Webbhotell genererade</div><div class="text-[11px] text-gray-400">12 nya fakturor — 1 mar</div></div></div>
+          <div class="flex items-start gap-3 relative"><div class="w-[11px] h-[11px] rounded-full bg-red-400 border-2 border-white shadow-sm flex-shrink-0 -ml-[5.5px] mt-0.5"></div><div><div class="text-[12px] font-semibold text-gray-800">Blikk-writeback misslyckades</div><div class="text-[11px] text-gray-400">2 fakturor, retry kl 15:00 — 24 feb</div></div></div>
+        </div>
+      </div>
+      <div class="col-span-3 card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-[13px] font-semibold text-gray-900">Väntar på granskning</h3>
+          <button onclick="showPage('review')" class="text-[12px] font-semibold text-accent-500 hover:text-accent-600 transition-colors">Visa alla 44 &rarr;</button>
+        </div>
+        <table class="w-full">
+          <thead><tr class="border-b border-gray-100"><th class="th">Kund</th><th class="th">Tjänst</th><th class="th text-right">Belopp</th><th class="th text-right">Status</th></tr></thead>
+          <tbody>
+            <tr class="hover:bg-gray-50/60 transition-colors"><td class="td font-medium text-gray-900">Checkat AB</td><td class="td text-gray-500">Marknadskoord.</td><td class="td text-right num font-medium">6 500 kr</td><td class="td text-right"><span class="pill pill-pending">Väntar</span></td></tr>
+            <tr class="hover:bg-gray-50/60 transition-colors"><td class="td font-medium text-gray-900">Mantorp Park AB</td><td class="td text-gray-500">Supportavtal</td><td class="td text-right num font-medium">699 kr</td><td class="td text-right"><span class="pill pill-pending">Väntar</span></td></tr>
+            <tr class="hover:bg-gray-50/60 transition-colors"><td class="td font-medium text-gray-900">Acme AB</td><td class="td text-gray-500">Marknadskoord.</td><td class="td text-right num font-medium">25 000 kr</td><td class="td text-right"><span class="pill pill-pending">Väntar</span></td></tr>
+            <tr class="hover:bg-gray-50/60 transition-colors"><td class="td font-medium text-gray-900">Sundström & Co</td><td class="td text-gray-500">Marknadskoord.</td><td class="td text-right num font-medium">12 500 kr</td><td class="td text-right"><span class="pill pill-pending">Väntar</span></td></tr>
+            <tr class="hover:bg-gray-50/60 transition-colors"><td class="td font-medium text-gray-900">Norberg Bygg</td><td class="td text-gray-500">Supportavtal</td><td class="td text-right num font-medium">699 kr</td><td class="td text-right"><span class="pill pill-pending">Väntar</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Service breakdown -->
+    <div class="grid grid-cols-3 gap-4">
+      <div class="card p-5 group hover:border-blue-200 transition-colors">
+        <div class="flex items-center gap-2 mb-2"><div class="w-2.5 h-2.5 rounded-full bg-accent-500"></div><span class="text-[12px] font-semibold text-gray-600">Din Marknadskoordinator</span></div>
+        <div class="text-xl font-extrabold text-gray-900 num">487 500 kr</div>
+        <div class="text-[11px] text-gray-400 mt-0.5 num">62 fakturor &middot; 57.5%</div>
+        <div class="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-accent-400 to-accent-500 rounded-full transition-all duration-700" style="width:57.5%"></div></div>
+      </div>
+      <div class="card p-5 group hover:border-emerald-200 transition-colors">
+        <div class="flex items-center gap-2 mb-2"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div><span class="text-[12px] font-semibold text-gray-600">Supportavtal</span></div>
+        <div class="text-xl font-extrabold text-gray-900 num">321 280 kr</div>
+        <div class="text-[11px] text-gray-400 mt-0.5 num">56 fakturor &middot; 37.9%</div>
+        <div class="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-700" style="width:37.9%"></div></div>
+      </div>
+      <div class="card p-5 group hover:border-purple-200 transition-colors">
+        <div class="flex items-center gap-2 mb-2"><div class="w-2.5 h-2.5 rounded-full bg-purple-500"></div><span class="text-[12px] font-semibold text-gray-600">Webbhotell</span></div>
+        <div class="text-xl font-extrabold text-gray-900 num">38 420 kr</div>
+        <div class="text-[11px] text-gray-400 mt-0.5 num">24 fakturor &middot; 4.5%</div>
+        <div class="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-purple-400 to-purple-500 rounded-full transition-all duration-700" style="width:4.5%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== REVIEW ==================== -->
+  <div id="page-review" class="page p-7 space-y-5 hidden">
+    <div class="flex items-center justify-between">
+      <div><h2 class="text-lg font-bold text-gray-900">Granska fakturor</h2><p class="text-[12px] text-gray-400 mt-0.5">Mars 2026 &middot; Godkänn innan veckofördelning</p></div>
+      <div class="flex items-center gap-2">
+        <button id="approve-btn" onclick="approveSelected()" class="btn btn-accent opacity-40 pointer-events-none" disabled>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Godkänn (<span id="selected-count">0</span>)
+        </button>
+        <button id="skip-btn" onclick="skipSelected()" class="btn btn-ghost opacity-40 pointer-events-none" disabled>Hoppa över</button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex items-center gap-3 card px-4 py-2.5">
+      <div class="flex-1 relative">
+        <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" id="search-input" placeholder="Sök kund..." class="w-full pl-9 pr-4 py-1.5 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400 transition-all" oninput="filterInvoices()">
+      </div>
+      <select id="service-filter" class="text-[12px] border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400 bg-white transition-all" onchange="filterInvoices()">
+        <option value="">Alla tjänster</option><option value="marknad">Marknadskoordinator</option><option value="support">Supportavtal</option><option value="hosting">Webbhotell</option>
+      </select>
+      <select id="status-filter" class="text-[12px] border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400 bg-white transition-all" onchange="filterInvoices()">
+        <option value="">Alla statusar</option><option value="pending" selected>Väntar</option><option value="approved">Godkänd</option><option value="exported">Exporterad</option><option value="confirmed">Bekräftad</option>
+      </select>
+    </div>
+
+    <!-- Selection bar -->
+    <div id="selection-bar" class="hidden bg-accent-50 border border-accent-200/60 rounded-xl px-5 py-2.5 flex items-center justify-between">
+      <div class="text-[12px] text-accent-800"><span class="font-bold" id="selection-summary">0 valda</span> <span class="text-accent-500" id="selection-amount">(0 kr)</span></div>
+      <div class="flex items-center gap-3 text-[12px] font-semibold">
+        <button onclick="approveSelected()" class="text-accent-600 hover:text-accent-700">Godkänn</button>
+        <span class="text-accent-200">|</span>
+        <button onclick="skipSelected()" class="text-gray-500 hover:text-gray-700">Hoppa över</button>
+        <span class="text-accent-200">|</span>
+        <button onclick="clearSelection()" class="text-gray-400 hover:text-gray-600">Avmarkera</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card overflow-hidden">
+      <table class="w-full" id="review-table">
+        <thead><tr class="bg-gray-50/80 border-b border-gray-100">
+          <th class="th w-10 text-center"><input type="checkbox" id="select-all" class="w-3.5 h-3.5 rounded border-gray-300 text-accent-500 focus:ring-accent-500/30 cursor-pointer" onchange="toggleAll(this)"></th>
+          <th class="th">Kund</th><th class="th">Tjänst</th><th class="th text-right">Belopp</th><th class="th text-center">Rader</th><th class="th">Status</th><th class="th w-8"></th>
+        </tr></thead>
+        <tbody id="review-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== ALL INVOICES ==================== -->
+  <div id="page-invoices" class="page p-7 space-y-5 hidden">
+    <div class="flex items-center justify-between">
+      <div><h2 class="text-lg font-bold text-gray-900">Alla fakturor</h2><p class="text-[12px] text-gray-400 mt-0.5">Mars 2026 &middot; 142 fakturor</p></div>
+      <button class="btn btn-ghost text-[12px]"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Exportera CSV</button>
+    </div>
+    <div class="card overflow-hidden">
+      <table class="w-full">
+        <thead><tr class="bg-gray-50/80 border-b border-gray-100"><th class="th">#</th><th class="th">Kund</th><th class="th">Tjänst</th><th class="th">Månad</th><th class="th text-right">Belopp</th><th class="th">Batch</th><th class="th">Status</th></tr></thead>
+        <tbody>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td text-gray-300 num">1001</td><td class="td font-medium text-gray-900">Acme AB</td><td class="td text-gray-500">Marknadskoord.</td><td class="td text-gray-500">Mars 2026</td><td class="td text-right font-semibold num">25 000 kr</td><td class="td"><span class="text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">V.1</span></td><td class="td"><span class="pill pill-confirmed">Bekräftad</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td text-gray-300 num">1002</td><td class="td font-medium text-gray-900">Sundström & Co</td><td class="td text-gray-500">Marknadskoord.</td><td class="td text-gray-500">Mars 2026</td><td class="td text-right font-semibold num">12 500 kr</td><td class="td"><span class="text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">V.1</span></td><td class="td"><span class="pill pill-confirmed">Bekräftad</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td text-gray-300 num">1003</td><td class="td font-medium text-gray-900">Kvist & Partners</td><td class="td text-gray-500">Marknadskoord.</td><td class="td text-gray-500">Mars 2026</td><td class="td text-right font-semibold num">18 000 kr</td><td class="td"><span class="text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">V.1</span></td><td class="td"><span class="pill pill-confirmed">Bekräftad</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td text-gray-300 num">1004</td><td class="td font-medium text-gray-900">Checkat AB</td><td class="td text-gray-500">Marknadskoord.</td><td class="td text-gray-500">Mars 2026</td><td class="td text-right font-semibold num">6 500 kr</td><td class="td"><span class="text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">V.2</span></td><td class="td"><span class="pill pill-approved">Godkänd</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td text-gray-300 num">1005</td><td class="td font-medium text-gray-900">Mantorp Park AB</td><td class="td text-gray-500">Supportavtal</td><td class="td text-gray-500">Mars 2026</td><td class="td text-right font-semibold num">699 kr</td><td class="td"><span class="text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">V.2</span></td><td class="td"><span class="pill pill-approved">Godkänd</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td text-gray-300 num">1006</td><td class="td font-medium text-gray-900">Norberg Bygg</td><td class="td text-gray-500">Supportavtal</td><td class="td text-gray-500">Mars 2026</td><td class="td text-right font-semibold num">699 kr</td><td class="td"><span class="text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">V.3</span></td><td class="td"><span class="pill pill-scheduled">Schemalagd</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td text-gray-300 num">1007</td><td class="td font-medium text-gray-900">Björk Media</td><td class="td text-gray-500">Marknadskoord.</td><td class="td text-gray-500">Mars 2026</td><td class="td text-right font-semibold num">15 000 kr</td><td class="td"><span class="text-[11px] text-gray-300">&mdash;</span></td><td class="td"><span class="pill pill-pending">Väntar</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td text-gray-300 num">1008</td><td class="td font-medium text-gray-900">Dalström IT</td><td class="td text-gray-500">Supportavtal</td><td class="td text-gray-500">Mars 2026</td><td class="td text-right font-semibold num">1 399 kr</td><td class="td"><span class="text-[11px] text-gray-300">&mdash;</span></td><td class="td"><span class="pill pill-pending">Väntar</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td text-gray-300 num">1009</td><td class="td font-medium text-gray-900">Mantorp Park AB</td><td class="td text-gray-500">Webbhotell</td><td class="td text-gray-500">Mars 2026</td><td class="td text-right font-semibold num">199 kr</td><td class="td"><span class="text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">V.1</span></td><td class="td"><span class="pill pill-confirmed">Bekräftad</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors"><td class="td text-gray-300 num">1010</td><td class="td font-medium text-gray-900">Elgström AB</td><td class="td text-gray-500">Marknadskoord.</td><td class="td text-gray-500">Mars 2026</td><td class="td text-right font-semibold num">8 500 kr</td><td class="td"><span class="text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">V.4</span></td><td class="td"><span class="pill pill-failed">Misslyckad</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== BATCHES ==================== -->
+  <div id="page-batches" class="page p-7 space-y-5 hidden">
+    <div class="flex items-center justify-between">
+      <div><h2 class="text-lg font-bold text-gray-900">Batcher</h2><p class="text-[12px] text-gray-400 mt-0.5">Mars 2026 &middot; LPT-fördelning över 4 veckor</p></div>
+      <div class="flex gap-2">
+        <button onclick="redistributeBatches()" class="btn btn-ghost text-[12px]"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>Omfördela</button>
+        <button class="btn btn-accent text-[12px]"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>Exportera nästa</button>
+      </div>
+    </div>
+    <div class="card p-5"><h3 class="text-[13px] font-semibold text-gray-900 mb-1">Monetär fördelning</h3><div class="h-44"><canvas id="batchChart"></canvas></div></div>
+    <div class="grid grid-cols-4 gap-4">
+      <div class="card overflow-hidden"><div class="bg-gradient-to-r from-emerald-500 to-emerald-400 px-4 py-3 flex items-center justify-between"><div><div class="font-bold text-white text-[13px]">Vecka 1</div><div class="text-[11px] text-white/70">Mån 2 mars</div></div><span class="pill bg-white/20 text-white text-[10px] border-0">Bekräftad</span></div><div class="p-4"><div class="text-xl font-extrabold text-gray-900 num">211 450 kr</div><div class="text-[11px] text-gray-400 mb-3">36 fakturor</div><div class="space-y-1.5 text-[11px]"><div class="flex justify-between text-gray-500"><span>Marknadskoord.</span><span class="num font-medium">162 500 kr</span></div><div class="flex justify-between text-gray-500"><span>Supportavtal</span><span class="num font-medium">43 150 kr</span></div><div class="flex justify-between text-gray-500"><span>Webbhotell</span><span class="num font-medium">5 800 kr</span></div></div></div></div>
+      <div class="card overflow-hidden"><div class="bg-gradient-to-r from-accent-500 to-accent-400 px-4 py-3 flex items-center justify-between"><div><div class="font-bold text-white text-[13px]">Vecka 2</div><div class="text-[11px] text-white/70">Mån 9 mars</div></div><span class="pill bg-white/20 text-white text-[10px] border-0">Schemalagd</span></div><div class="p-4"><div class="text-xl font-extrabold text-gray-900 num">214 200 kr</div><div class="text-[11px] text-gray-400 mb-3">35 fakturor</div><div class="space-y-1.5 text-[11px]"><div class="flex justify-between text-gray-500"><span>Marknadskoord.</span><span class="num font-medium">156 000 kr</span></div><div class="flex justify-between text-gray-500"><span>Supportavtal</span><span class="num font-medium">48 400 kr</span></div><div class="flex justify-between text-gray-500"><span>Webbhotell</span><span class="num font-medium">9 800 kr</span></div></div></div></div>
+      <div class="card overflow-hidden"><div class="bg-gradient-to-r from-amber-500 to-amber-400 px-4 py-3 flex items-center justify-between"><div><div class="font-bold text-white text-[13px]">Vecka 3</div><div class="text-[11px] text-white/70">Mån 16 mars</div></div><span class="pill bg-white/20 text-white text-[10px] border-0">Väntar</span></div><div class="p-4"><div class="text-xl font-extrabold text-gray-900 num">209 750 kr</div><div class="text-[11px] text-gray-400 mb-3">37 fakturor</div><div class="space-y-1.5 text-[11px]"><div class="flex justify-between text-gray-500"><span>Marknadskoord.</span><span class="num font-medium">148 000 kr</span></div><div class="flex justify-between text-gray-500"><span>Supportavtal</span><span class="num font-medium">49 250 kr</span></div><div class="flex justify-between text-gray-500"><span>Webbhotell</span><span class="num font-medium">12 500 kr</span></div></div></div></div>
+      <div class="card overflow-hidden"><div class="bg-gradient-to-r from-gray-500 to-gray-400 px-4 py-3 flex items-center justify-between"><div><div class="font-bold text-white text-[13px]">Vecka 4</div><div class="text-[11px] text-white/70">Mån 23 mars</div></div><span class="pill bg-white/20 text-white text-[10px] border-0">Väntar</span></div><div class="p-4"><div class="text-xl font-extrabold text-gray-900 num">211 800 kr</div><div class="text-[11px] text-gray-400 mb-3">34 fakturor</div><div class="space-y-1.5 text-[11px]"><div class="flex justify-between text-gray-500"><span>Marknadskoord.</span><span class="num font-medium">158 500 kr</span></div><div class="flex justify-between text-gray-500"><span>Supportavtal</span><span class="num font-medium">43 000 kr</span></div><div class="flex justify-between text-gray-500"><span>Webbhotell</span><span class="num font-medium">10 300 kr</span></div></div></div></div>
+    </div>
+    <div class="bg-emerald-50 border border-emerald-200/60 rounded-xl px-5 py-3.5 flex items-center gap-3">
+      <div class="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center"><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
+      <div><div class="text-[12px] font-semibold text-emerald-800">Jämn fördelning uppnådd</div><div class="text-[11px] text-emerald-600">Max avvikelse: 2.1% (4 450 kr) från ideal 211 800 kr/vecka</div></div>
+    </div>
+  </div>
+
+  <!-- ==================== HOSTING ==================== -->
+  <div id="page-hosting" class="page p-7 space-y-5 hidden">
+    <div class="flex items-center justify-between">
+      <div><h2 class="text-lg font-bold text-gray-900">Webbhotell</h2><p class="text-[12px] text-gray-400 mt-0.5">MRR: 38 420 kr &middot; 24 aktiva</p></div>
+      <button onclick="showHostingModal()" class="btn btn-accent text-[12px]"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>Ny prenumeration</button>
+    </div>
+    <div class="card overflow-hidden">
+      <table class="w-full">
+        <thead><tr class="bg-gray-50/80 border-b border-gray-100"><th class="th">Kund</th><th class="th">Domän</th><th class="th">Artiklar</th><th class="th text-right">Belopp</th><th class="th">Intervall</th><th class="th">Nästa</th><th class="th">Status</th></tr></thead>
+        <tbody>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td font-medium text-gray-900">Mantorp Park AB</td><td class="td"><code class="text-[11px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">mantorp.se</code></td><td class="td text-[11px] text-gray-500">Webbhotell, SSL</td><td class="td text-right font-semibold num">199 kr</td><td class="td text-gray-500">Månatlig</td><td class="td text-gray-500">1 mar 2026</td><td class="td"><span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Aktiv</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td font-medium text-gray-900">Checkat AB</td><td class="td"><code class="text-[11px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">checkat.se</code></td><td class="td text-[11px] text-gray-500">Webbhotell, SSL, E-post</td><td class="td text-right font-semibold num">299 kr</td><td class="td text-gray-500">Månatlig</td><td class="td text-gray-500">1 mar 2026</td><td class="td"><span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Aktiv</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td font-medium text-gray-900">Acme AB</td><td class="td"><code class="text-[11px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">acme.se</code></td><td class="td text-[11px] text-gray-500">Webbhotell, SSL, CDN</td><td class="td text-right font-semibold num">2 388 kr</td><td class="td text-gray-500">Årligen</td><td class="td text-gray-500">1 sep 2026</td><td class="td"><span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Aktiv</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td font-medium text-gray-900">Sundström & Co</td><td class="td"><code class="text-[11px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">sundstrom.se</code></td><td class="td text-[11px] text-gray-500">Webbhotell, SSL</td><td class="td text-right font-semibold num">199 kr</td><td class="td text-gray-500">Månatlig</td><td class="td text-gray-500">1 mar 2026</td><td class="td"><span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Aktiv</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td font-medium text-gray-900">Kvist & Partners</td><td class="td"><code class="text-[11px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">kvist-partners.se</code></td><td class="td text-[11px] text-gray-500">Webbhotell, SSL, E-post, CDN</td><td class="td text-right font-semibold num">449 kr</td><td class="td text-gray-500">Månatlig</td><td class="td text-gray-500">1 mar 2026</td><td class="td"><span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Aktiv</span></td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors"><td class="td font-medium text-gray-900">Björk Media</td><td class="td"><code class="text-[11px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">bjorkmedia.se</code></td><td class="td text-[11px] text-gray-500">Webbhotell, SSL</td><td class="td text-right font-semibold num">199 kr</td><td class="td text-gray-500">Månatlig</td><td class="td text-gray-500">1 mar 2026</td><td class="td"><span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-700"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Pausad</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== CUSTOMERS ==================== -->
+  <div id="page-customers" class="page p-7 space-y-5 hidden">
+    <div class="flex items-center justify-between">
+      <div><h2 class="text-lg font-bold text-gray-900">Kunder</h2><p class="text-[12px] text-gray-400 mt-0.5">Synkade från Blikk + manuella</p></div>
+      <div class="flex gap-2">
+        <button class="btn btn-ghost text-[12px]"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>Synka</button>
+        <button class="btn btn-accent text-[12px]"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>Lägg till</button>
+      </div>
+    </div>
+    <div class="card overflow-hidden">
+      <table class="w-full">
+        <thead><tr class="bg-gray-50/80 border-b border-gray-100"><th class="th">Kund</th><th class="th">Org.nr</th><th class="th">Blikk</th><th class="th">Visma</th><th class="th">Tjänster</th><th class="th text-right">Mån. oms.</th></tr></thead>
+        <tbody>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td font-medium text-gray-900">Acme AB</td><td class="td text-gray-400 num text-[12px]">556123-4567</td><td class="td"><code class="text-[10px] bg-accent-50 text-accent-700 px-1.5 py-0.5 rounded font-bold">C-1042</code></td><td class="td"><code class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">V-8823</code></td><td class="td"><span class="text-[10px] font-semibold bg-accent-50 text-accent-600 px-1.5 py-0.5 rounded mr-1">Marknad</span><span class="text-[10px] font-semibold bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">Webb</span></td><td class="td text-right font-semibold num">25 199 kr</td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td font-medium text-gray-900">Checkat AB</td><td class="td text-gray-400 num text-[12px]">556234-5678</td><td class="td"><code class="text-[10px] bg-accent-50 text-accent-700 px-1.5 py-0.5 rounded font-bold">C-841</code></td><td class="td"><code class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">V-7712</code></td><td class="td"><span class="text-[10px] font-semibold bg-accent-50 text-accent-600 px-1.5 py-0.5 rounded mr-1">Marknad</span><span class="text-[10px] font-semibold bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">Webb</span></td><td class="td text-right font-semibold num">6 799 kr</td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td font-medium text-gray-900">Mantorp Park AB</td><td class="td text-gray-400 num text-[12px]">556345-6789</td><td class="td"><code class="text-[10px] bg-accent-50 text-accent-700 px-1.5 py-0.5 rounded font-bold">C-791</code></td><td class="td"><code class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">V-6601</code></td><td class="td"><span class="text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded mr-1">Support</span><span class="text-[10px] font-semibold bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">Webb</span></td><td class="td text-right font-semibold num">898 kr</td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td font-medium text-gray-900">Sundström & Co</td><td class="td text-gray-400 num text-[12px]">556456-7890</td><td class="td"><code class="text-[10px] bg-accent-50 text-accent-700 px-1.5 py-0.5 rounded font-bold">C-1105</code></td><td class="td"><code class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">V-9934</code></td><td class="td"><span class="text-[10px] font-semibold bg-accent-50 text-accent-600 px-1.5 py-0.5 rounded mr-1">Marknad</span><span class="text-[10px] font-semibold bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">Webb</span></td><td class="td text-right font-semibold num">12 699 kr</td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50"><td class="td font-medium text-gray-900">Kvist & Partners</td><td class="td text-gray-400 num text-[12px]">556567-8901</td><td class="td"><code class="text-[10px] bg-accent-50 text-accent-700 px-1.5 py-0.5 rounded font-bold">C-920</code></td><td class="td"><code class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">V-7788</code></td><td class="td"><span class="text-[10px] font-semibold bg-accent-50 text-accent-600 px-1.5 py-0.5 rounded mr-1">Marknad</span><span class="text-[10px] font-semibold bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">Webb</span></td><td class="td text-right font-semibold num">18 449 kr</td></tr>
+          <tr class="hover:bg-gray-50/60 transition-colors"><td class="td font-medium text-gray-900">Norberg Bygg</td><td class="td text-gray-400 num text-[12px]">556678-9012</td><td class="td"><code class="text-[10px] bg-accent-50 text-accent-700 px-1.5 py-0.5 rounded font-bold">C-1200</code></td><td class="td"><code class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">V-10012</code></td><td class="td"><span class="text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded">Support</span></td><td class="td text-right font-semibold num">699 kr</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== SETTINGS ==================== -->
+  <div id="page-settings" class="page p-7 space-y-5 hidden">
+    <h2 class="text-lg font-bold text-gray-900">Inställningar</h2>
+
+    <!-- Blikk -->
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-5">
+        <div><h3 class="text-[14px] font-bold text-gray-900">Blikk API</h3><p class="text-[11px] text-gray-400 mt-0.5">Autentisering och synk</p></div>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>Ansluten</span>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">API-URL</label><input type="text" value="https://api.blikk.se" class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg bg-gray-50 text-gray-500" readonly></div>
+        <div><label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Användarnamn</label><input type="text" value="oliver@foretag.se" class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400"></div>
+        <div><label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">API-nyckel</label><input type="password" value="sk_live_xxxxxxxxxxxxxxxx" class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400"></div>
+        <div><label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Rate limit</label><input type="text" value="4 req/s" class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg bg-gray-50 text-gray-500" readonly></div>
+      </div>
+      <div class="mt-4 flex gap-2"><button class="btn btn-ghost text-[12px]">Testa</button><button class="btn btn-accent text-[12px]">Spara</button></div>
+    </div>
+
+    <!-- Visma -->
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-5">
+        <div><h3 class="text-[14px] font-bold text-gray-900">Visma eEkonomi</h3><p class="text-[11px] text-gray-400 mt-0.5">OAuth 2.0-anslutning</p></div>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>Ansluten</span>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Client ID</label><input type="text" value="fakturaflode-app" class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400"></div>
+        <div><label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Client Secret</label><input type="password" value="xxxxxxxxxxxxxxxxxxxxxxxx" class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400"></div>
+        <div><label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Token</label><input type="text" value="Giltig — utgår om 42 min" class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg bg-emerald-50 text-emerald-700 font-medium" readonly></div>
+        <div><label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Miljö</label><select class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400 bg-white"><option>Produktion</option><option>Sandbox</option></select></div>
+      </div>
+      <div class="mt-4 flex gap-2"><button class="btn btn-ghost text-[12px]">Återanslut</button><button class="btn btn-accent text-[12px]">Spara</button></div>
+    </div>
+
+    <!-- Articles -->
+    <div class="card p-6">
+      <h3 class="text-[14px] font-bold text-gray-900 mb-4">Artikelmappning</h3>
+      <table class="w-full">
+        <thead><tr class="bg-gray-50/80 border-b border-gray-100"><th class="th">Art.nr</th><th class="th">Namn</th><th class="th">Typ</th><th class="th text-right">Pris</th><th class="th">Moms</th><th class="th">Visma</th></tr></thead>
+        <tbody>
+          <tr class="border-b border-gray-50"><td class="td font-mono text-[12px] font-bold text-gray-500">101</td><td class="td text-gray-900 font-medium">Din Marknadskoordinator</td><td class="td"><span class="text-[10px] font-semibold bg-accent-50 text-accent-600 px-1.5 py-0.5 rounded">Marknad</span></td><td class="td text-right num font-medium">6 500 kr</td><td class="td text-gray-400">25%</td><td class="td"><code class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold">A-101</code></td></tr>
+          <tr class="border-b border-gray-50"><td class="td font-mono text-[12px] font-bold text-gray-500">103</td><td class="td text-gray-900 font-medium">Din Marknadskoordinator Premium</td><td class="td"><span class="text-[10px] font-semibold bg-accent-50 text-accent-600 px-1.5 py-0.5 rounded">Marknad</span></td><td class="td text-right num font-medium">25 000 kr</td><td class="td text-gray-400">25%</td><td class="td"><code class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold">A-103</code></td></tr>
+          <tr class="border-b border-gray-50"><td class="td font-mono text-[12px] font-bold text-gray-500">108</td><td class="td text-gray-900 font-medium">Supportavtal</td><td class="td"><span class="text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded">Support</span></td><td class="td text-right num font-medium">349 kr</td><td class="td text-gray-400">25%</td><td class="td"><code class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold">A-108</code></td></tr>
+          <tr class="border-b border-gray-50"><td class="td font-mono text-[12px] font-bold text-gray-500">2101</td><td class="td text-gray-900 font-medium">Cookiebot</td><td class="td"><span class="text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded">Support</span></td><td class="td text-right num font-medium">150 kr</td><td class="td text-gray-400">25%</td><td class="td"><code class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold">A-2101</code></td></tr>
+          <tr><td class="td font-mono text-[12px] font-bold text-gray-500">211</td><td class="td text-gray-900 font-medium">AI Översättning</td><td class="td"><span class="text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded">Support</span></td><td class="td text-right num font-medium">200 kr</td><td class="td text-gray-400">25%</td><td class="td"><code class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold">A-211</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Toggles -->
+    <div class="card p-6">
+      <h3 class="text-[14px] font-bold text-gray-900 mb-4">Allmänt</h3>
+      <div class="divide-y divide-gray-100">
+        <div class="flex items-center justify-between py-3"><div><div class="text-[13px] font-medium text-gray-800">Automatisk Blikk-synk</div><div class="text-[11px] text-gray-400">Varje dag kl. 08:00</div></div><button class="w-10 h-[22px] rounded-full bg-accent-500 relative transition-colors" onclick="this.classList.toggle('bg-accent-500');this.classList.toggle('bg-gray-200');this.querySelector('span').classList.toggle('translate-x-[20px]');this.querySelector('span').classList.toggle('translate-x-[3px]')"><span class="absolute top-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform translate-x-[20px]"></span></button></div>
+        <div class="flex items-center justify-between py-3"><div><div class="text-[13px] font-medium text-gray-800">E-postnotiser vid fel</div><div class="text-[11px] text-gray-400">Misslyckad Visma-export</div></div><button class="w-10 h-[22px] rounded-full bg-accent-500 relative transition-colors" onclick="this.classList.toggle('bg-accent-500');this.classList.toggle('bg-gray-200');this.querySelector('span').classList.toggle('translate-x-[20px]');this.querySelector('span').classList.toggle('translate-x-[3px]')"><span class="absolute top-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform translate-x-[20px]"></span></button></div>
+        <div class="flex items-center justify-between py-3"><div><div class="text-[13px] font-medium text-gray-800">Sandbox-läge</div><div class="text-[11px] text-gray-400">Visma sandbox istället för produktion</div></div><button class="w-10 h-[22px] rounded-full bg-gray-200 relative transition-colors" onclick="this.classList.toggle('bg-accent-500');this.classList.toggle('bg-gray-200');this.querySelector('span').classList.toggle('translate-x-[20px]');this.querySelector('span').classList.toggle('translate-x-[3px]')"><span class="absolute top-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform translate-x-[3px]"></span></button></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- ==================== HOSTING MODAL ==================== -->
+<div id="hosting-modal" class="hidden fixed inset-0 z-50 modal-backdrop" onclick="if(event.target===this)hideHostingModal()">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-md relative">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="text-[14px] font-bold text-gray-900">Ny prenumeration</h3>
+        <button onclick="hideHostingModal()" class="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <div class="px-6 py-5 space-y-4">
+        <div><label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Kund</label><select class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400 bg-white"><option>Välj kund...</option><option>Acme AB</option><option>Checkat AB</option><option>Mantorp Park AB</option></select></div>
+        <div><label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Domän</label><input type="text" placeholder="example.se" class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400"></div>
+        <div><label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Intervall</label><select class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400 bg-white"><option>Månatlig</option><option>Kvartalsvis</option><option>Årligen</option></select></div>
+        <div><label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Nästa faktura</label><input type="date" value="2026-03-01" class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-400"></div>
+      </div>
+      <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+        <button onclick="hideHostingModal()" class="btn btn-ghost text-[12px]">Avbryt</button>
+        <button onclick="hideHostingModal()" class="btn btn-accent text-[12px]">Spara</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-[13px] font-medium">
+  <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+  <span id="toast-message"></span>
+</div>
+
+<script>
+// Data
+const invoiceData = [
+  {id:1,customer:'Acme AB',project:'855',service:'marknad',serviceLabel:'Din Marknadskoordinator',amount:25000,status:'pending',lines:[{article:'103',text:'Din Marknadskoordinator Premium — Mars 2026',qty:1,price:25000}]},
+  {id:2,customer:'Sundström & Co',project:'1105',service:'marknad',serviceLabel:'Din Marknadskoordinator',amount:12500,status:'pending',lines:[{article:'101',text:'Din Marknadskoordinator — Mars 2026',qty:1,price:12500}]},
+  {id:3,customer:'Kvist & Partners',project:'920',service:'marknad',serviceLabel:'Din Marknadskoordinator',amount:18000,status:'pending',lines:[{article:'103',text:'Din Marknadskoordinator Premium — Mars 2026',qty:1,price:18000}]},
+  {id:4,customer:'Checkat AB',project:'841',service:'marknad',serviceLabel:'Din Marknadskoordinator',amount:6500,status:'pending',lines:[{article:'101',text:'Din Marknadskoordinator — Mars 2026',qty:1,price:6500}]},
+  {id:5,customer:'Mantorp Park AB',project:'791',service:'support',serviceLabel:'Supportavtal',amount:699,status:'pending',lines:[{article:'108',text:'Supportavtal-Small — Mars 2026',qty:1,price:349},{article:'2101',text:'Cookiebot — Mars 2026',qty:1,price:150},{article:'211',text:'AI Översättning — Mars 2026',qty:1,price:200}]},
+  {id:6,customer:'Norberg Bygg',project:'1200',service:'support',serviceLabel:'Supportavtal',amount:699,status:'pending',lines:[{article:'108',text:'Supportavtal-Small — Mars 2026',qty:1,price:349},{article:'2101',text:'Cookiebot — Mars 2026',qty:1,price:150},{article:'211',text:'AI Översättning — Mars 2026',qty:1,price:200}]},
+  {id:7,customer:'Björk Media',project:'1150',service:'marknad',serviceLabel:'Din Marknadskoordinator',amount:15000,status:'pending',lines:[{article:'103',text:'Din Marknadskoordinator Premium — Mars 2026',qty:1,price:15000}]},
+  {id:8,customer:'Dalström IT',project:'1180',service:'support',serviceLabel:'Supportavtal',amount:1399,status:'pending',lines:[{article:'108',text:'Supportavtal-Medium — Mars 2026',qty:1,price:699},{article:'2101',text:'Cookiebot — Mars 2026',qty:1,price:150},{article:'211',text:'AI Översättning — Mars 2026',qty:1,price:200},{article:'211',text:'AI Översättning Extra — Mars 2026',qty:1,price:350}]},
+  {id:9,customer:'Elgström AB',project:'1210',service:'marknad',serviceLabel:'Din Marknadskoordinator',amount:8500,status:'pending',lines:[{article:'101',text:'Din Marknadskoordinator — Mars 2026',qty:1,price:8500}]},
+  {id:10,customer:'Fransson & Co',project:'1220',service:'support',serviceLabel:'Supportavtal',amount:499,status:'pending',lines:[{article:'108',text:'Supportavtal-Mini — Mars 2026',qty:1,price:349},{article:'2101',text:'Cookiebot — Mars 2026',qty:1,price:150}]},
+  {id:11,customer:'Granberg Konsult',project:'1230',service:'marknad',serviceLabel:'Din Marknadskoordinator',amount:9500,status:'pending',lines:[{article:'101',text:'Din Marknadskoordinator — Mars 2026',qty:1,price:9500}]},
+  {id:12,customer:'Holm & Berg AB',project:'1240',service:'hosting',serviceLabel:'Webbhotell',amount:299,status:'pending',lines:[{article:'WH01',text:'Webbhotell — Mars 2026',qty:1,price:149},{article:'WH02',text:'SSL-certifikat — Mars 2026',qty:1,price:50},{article:'WH03',text:'E-posttjänst — Mars 2026',qty:1,price:100}]},
+];
+let selectedIds=new Set(), expandedIds=new Set();
+
+// Navigation
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('page-'+p).classList.remove('hidden');
+  document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
+  const link=document.querySelector(`[data-page="${p}"]`);
+  if(link)link.classList.add('active');
+  const titles={dashboard:'Dashboard',review:'Granska fakturor',invoices:'Alla fakturor',batches:'Batcher',hosting:'Webbhotell',customers:'Kunder',settings:'Inställningar'};
+  document.getElementById('page-title').textContent=titles[p]||p;
+  if(p==='review')renderReviewTable();
+}
+
+// Review table
+function renderReviewTable(){
+  const tbody=document.getElementById('review-tbody');
+  const search=document.getElementById('search-input').value.toLowerCase();
+  const sf=document.getElementById('service-filter').value;
+  const stf=document.getElementById('status-filter').value;
+  let f=invoiceData.filter(i=>{
+    if(search&&!i.customer.toLowerCase().includes(search))return false;
+    if(sf&&i.service!==sf)return false;
+    if(stf&&i.status!==stf)return false;
+    return true;
+  });
+  tbody.innerHTML=f.map(inv=>{
+    const sel=selectedIds.has(inv.id), exp=expandedIds.has(inv.id);
+    const badge={pending:'pill-pending">Väntar',approved:'pill-approved">Godkänd',exported:'pill-exported">Exporterad',confirmed:'pill-confirmed">Bekräftad'}[inv.status];
+    let h=`<tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50 cursor-pointer" onclick="toggleExpand(${inv.id})">
+      <td class="td text-center" onclick="event.stopPropagation()"><input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300 text-accent-500 focus:ring-accent-500/30 cursor-pointer" ${sel?'checked':''} onchange="toggleSelect(${inv.id},this.checked)"></td>
+      <td class="td"><div class="font-medium text-gray-900 text-[13px]">${inv.customer}</div><div class="text-[11px] text-gray-400">Proj: ${inv.project}</div></td>
+      <td class="td text-gray-500">${inv.serviceLabel}</td>
+      <td class="td text-right font-semibold num">${fmt(inv.amount)}</td>
+      <td class="td text-center"><span class="text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">${inv.lines.length}</span></td>
+      <td class="td"><span class="pill ${badge}</span></td>
+      <td class="td"><svg class="w-4 h-4 text-gray-300 transition-transform ${exp?'rotate-180':''}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></td>
+    </tr>`;
+    if(exp) h+=`<tr class="bg-gray-50/40"><td colspan="7" class="px-4 py-3"><div class="bg-white rounded-lg border border-gray-200 overflow-hidden ml-8 shadow-sm">
+      <table class="w-full"><thead><tr class="bg-gray-50/80 border-b border-gray-100"><th class="th">Art.nr</th><th class="th">Beskrivning</th><th class="th text-right">Antal</th><th class="th text-right">Pris</th><th class="th text-right">Summa</th></tr></thead>
+      <tbody>${inv.lines.map(l=>`<tr class="border-b border-gray-50"><td class="td font-mono text-[11px] text-gray-400 font-bold">${l.article}</td><td class="td text-[12px] text-gray-700">${l.text}</td><td class="td text-right text-gray-400 num">${l.qty} st</td><td class="td text-right num">${fmt(l.price)}</td><td class="td text-right font-semibold num">${fmt(l.qty*l.price)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr class="bg-gray-50/80"><td colspan="4" class="td text-right font-semibold text-gray-600 text-[12px]">Totalt:</td><td class="td text-right font-bold text-gray-900 num">${fmt(inv.amount)}</td></tr></tfoot></table></div></td></tr>`;
+    return h;
+  }).join('');
+  updateSelectionUI();
+}
+function toggleExpand(id){expandedIds.has(id)?expandedIds.delete(id):expandedIds.add(id);renderReviewTable();}
+function toggleSelect(id,c){c?selectedIds.add(id):selectedIds.delete(id);updateSelectionUI();}
+function toggleAll(cb){const ids=getVisibleIds();if(cb.checked)ids.forEach(id=>selectedIds.add(id));else ids.forEach(id=>selectedIds.delete(id));renderReviewTable();}
+function clearSelection(){selectedIds.clear();renderReviewTable();}
+function getVisibleIds(){const s=document.getElementById('search-input').value.toLowerCase(),sf=document.getElementById('service-filter').value,stf=document.getElementById('status-filter').value;return invoiceData.filter(i=>{if(s&&!i.customer.toLowerCase().includes(s))return false;if(sf&&i.service!==sf)return false;if(stf&&i.status!==stf)return false;return true;}).map(i=>i.id);}
+function updateSelectionUI(){
+  const n=selectedIds.size, total=invoiceData.filter(i=>selectedIds.has(i.id)).reduce((s,i)=>s+i.amount,0);
+  document.getElementById('selected-count').textContent=n;
+  document.getElementById('selection-summary').textContent=`${n} faktura${n!==1?'er':''} valda`;
+  document.getElementById('selection-amount').textContent=`(${fmt(total)})`;
+  const bar=document.getElementById('selection-bar'),ab=document.getElementById('approve-btn'),sb=document.getElementById('skip-btn');
+  if(n>0){bar.classList.remove('hidden');bar.classList.add('flex');ab.disabled=false;ab.classList.remove('opacity-40','pointer-events-none');sb.disabled=false;sb.classList.remove('opacity-40','pointer-events-none');}
+  else{bar.classList.add('hidden');bar.classList.remove('flex');ab.disabled=true;ab.classList.add('opacity-40','pointer-events-none');sb.disabled=true;sb.classList.add('opacity-40','pointer-events-none');}
+}
+function approveSelected(){const n=selectedIds.size;if(!n)return;selectedIds.forEach(id=>{const inv=invoiceData.find(i=>i.id===id);if(inv)inv.status='approved';});showToast(`${n} faktura${n!==1?'er':''} godkända`);selectedIds.clear();renderReviewTable();}
+function skipSelected(){const n=selectedIds.size;if(!n)return;showToast(`${n} faktura${n!==1?'er':''} hoppade över`);selectedIds.forEach(id=>{const idx=invoiceData.findIndex(i=>i.id===id);if(idx>-1)invoiceData.splice(idx,1);});selectedIds.clear();renderReviewTable();}
+function filterInvoices(){renderReviewTable();}
+
+// Utils
+function fmt(n){return n.toLocaleString('sv-SE')+' kr';}
+function showToast(msg){const t=document.getElementById('toast');document.getElementById('toast-message').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function triggerSync(){const i=document.getElementById('sync-indicator');i.classList.remove('hidden');i.classList.add('flex');setTimeout(()=>{i.classList.add('hidden');i.classList.remove('flex');showToast('Blikk-synk klar — 142 fakturor');},2500);}
+function redistributeBatches(){showToast('Omfördelat med LPT-algoritm');}
+function showHostingModal(){const m=document.getElementById('hosting-modal');m.classList.remove('hidden');requestAnimationFrame(()=>m.classList.add('show'));}
+function hideHostingModal(){const m=document.getElementById('hosting-modal');m.classList.remove('show');setTimeout(()=>m.classList.add('hidden'),300);}
+let mi=2;const months=['Januari','Februari','Mars','April','Maj','Juni','Juli','Augusti','September','Oktober','November','December'];
+function changeMonth(d){mi=Math.max(0,Math.min(11,mi+d));document.getElementById('current-month').textContent=months[mi]+' 2026';}
+
+// Charts
+Chart.defaults.font.family='Inter';
+Chart.defaults.font.size=11;
+document.addEventListener('DOMContentLoaded',()=>{
+  const wc=document.getElementById('weeklyChart');
+  if(wc) new Chart(wc,{type:'bar',data:{labels:['V.1 — 2 mar','V.2 — 9 mar','V.3 — 16 mar','V.4 — 23 mar'],datasets:[
+    {label:'Marknadskoord.',data:[162500,156000,148000,158500],backgroundColor:'#3366ff',borderRadius:6,borderSkipped:false},
+    {label:'Supportavtal',data:[43150,48400,49250,43000],backgroundColor:'#10b981',borderRadius:6,borderSkipped:false},
+    {label:'Webbhotell',data:[5800,9800,12500,10300],backgroundColor:'#8b5cf6',borderRadius:6,borderSkipped:false},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:8,usePointStyle:true,pointStyle:'circle',padding:16,font:{size:11,weight:'600'}}},tooltip:{backgroundColor:'#111',titleFont:{size:11,weight:'600'},bodyFont:{size:11},padding:10,cornerRadius:8,callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y.toLocaleString('sv-SE')} kr`}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10,weight:'500'},color:'#9ca3af'}},y:{stacked:true,grid:{color:'#f3f4f6',drawBorder:false},ticks:{callback:v=>(v/1000)+'k',font:{size:10},color:'#9ca3af'}}}}});
+
+  const pc=document.getElementById('projectionChart');
+  if(pc) new Chart(pc,{type:'line',data:{labels:['Jan','Feb','Mar','Apr','Maj','Jun'],datasets:[
+    {label:'Fakturerat',data:[780000,812000,847200,null,null,null],borderColor:'#3366ff',backgroundColor:'rgba(51,102,255,0.08)',fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#3366ff',pointBorderColor:'#fff',pointBorderWidth:2,borderWidth:2.5},
+    {label:'Prognos',data:[null,null,847200,860000,875000,890000],borderColor:'#3366ff',borderDash:[4,4],tension:0.4,pointRadius:3,pointBackgroundColor:'#3366ff',pointBorderColor:'#fff',pointBorderWidth:2,borderWidth:2}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#111',titleFont:{size:11,weight:'600'},bodyFont:{size:11},padding:10,cornerRadius:8,callbacks:{label:c=>c.parsed.y?`${c.parsed.y.toLocaleString('sv-SE')} kr`:''}}},scales:{x:{grid:{display:false},ticks:{font:{size:10,weight:'500'},color:'#9ca3af'}},y:{grid:{color:'#f3f4f6',drawBorder:false},ticks:{callback:v=>(v/1000)+'k',font:{size:10},color:'#9ca3af'}}}}});
+
+  const bc=document.getElementById('batchChart');
+  if(bc) new Chart(bc,{type:'bar',data:{labels:['Vecka 1','Vecka 2','Vecka 3','Vecka 4'],datasets:[{label:'Belopp',data:[211450,214200,209750,211800],backgroundColor:['#10b981','#3366ff','#f59e0b','#6b7280'],borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#111',titleFont:{size:11,weight:'600'},bodyFont:{size:11},padding:10,cornerRadius:8,callbacks:{label:c=>`${c.parsed.y.toLocaleString('sv-SE')} kr`}}},scales:{x:{grid:{display:false},ticks:{font:{size:10,weight:'500'},color:'#9ca3af'}},y:{min:200000,grid:{color:'#f3f4f6',drawBorder:false},ticks:{callback:v=>(v/1000)+'k',font:{size:10},color:'#9ca3af'}}}}});
+});
+</script>
+</body>
+</html>

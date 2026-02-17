@@ -1,0 +1,107 @@
+<%
+function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+const withVisma = customers.filter(c => c.vismaCustomerId).length;
+const withBlikk = customers.filter(c => c.blikkContactId).length;
+%>
+
+<div class="p-7 space-y-5">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-lg font-bold text-gray-900">Kunder</h2>
+      <p class="text-xs text-gray-400 mt-0.5">
+        <%= customers.length %> kunder &middot;
+        <%= withBlikk %> från Blikk &middot;
+        <%= withVisma %> matchade mot Visma
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn btn-ghost text-xs" onclick="fetch('/api/sync/contacts',{method:'POST'}).then(()=>location.reload())">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Synka Blikk
+      </button>
+      <button class="btn btn-ghost text-xs" onclick="fetch('/api/sync/spiris-customers',{method:'POST'}).then(r=>r.json()).then(d=>{ alert('Matchade: '+d.matched+' (org: '+d.matchedByOrg+', nr: '+d.matchedByNumber+', namn: '+d.matchedByName+')'); location.reload(); })">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+        Matcha Visma
+      </button>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden">
+    <table class="w-full">
+      <thead>
+        <tr class="bg-gray-50/80 border-b border-gray-100">
+          <th>Kund</th>
+          <th>Org.nr</th>
+          <th>Blikk</th>
+          <th>Visma</th>
+          <th>Tjänster</th>
+          <th class="text-right">Mån. oms.</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% customers.forEach(cust => { %>
+          <% const monthlyTotal = cust.invoices.reduce((s, i) => s + i.totalAmount, 0); %>
+          <% const serviceTypes = [...new Set(cust.invoices.map(i => i.serviceType))]; %>
+          <% const hasHosting = cust.hostingSubscriptions.length > 0; %>
+          <% const hasProjects = cust.projects && cust.projects.length > 0; %>
+          <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50">
+            <td class="font-medium text-gray-900"><%= cust.name %></td>
+            <td class="text-gray-400 num text-xs"><%= cust.orgNumber || '—' %></td>
+            <td>
+              <% if (cust.blikkContactId) { %>
+                <code class="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold">C-<%= cust.blikkContactId %></code>
+              <% } else { %>
+                <span class="text-xs text-gray-300">—</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (cust.vismaCustomerId) { %>
+                <code class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold" title="<%= cust.vismaCustomerId %>">Kopplad</code>
+              <% } else { %>
+                <div x-data="{ open: false, searching: false, results: [], q: '' }">
+                  <button @click="open = !open" class="text-[10px] text-amber-600 hover:text-amber-800 font-semibold">Koppla</button>
+                  <div x-show="open" class="absolute z-10 mt-1 bg-white shadow-lg rounded-lg border p-3 w-72">
+                    <input type="text" x-model="q" placeholder="Sök kund i Visma..."
+                      class="w-full text-xs border rounded px-2 py-1.5 mb-2"
+                      @input.debounce.400ms="if(q.length>=2){ searching=true; fetch('/api/spiris/customers/search?q='+encodeURIComponent(q)).then(r=>r.json()).then(d=>{ results=Array.isArray(d)?d:[]; searching=false; }) }">
+                    <div x-show="searching" class="text-xs text-gray-400">Söker...</div>
+                    <template x-for="r in results" :key="r.Id || r.id">
+                      <button @click="fetch('/api/customers/<%= cust.id %>/visma',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({vismaCustomerId:r.Id||r.id})}).then(()=>location.reload())"
+                        class="block w-full text-left text-xs px-2 py-1.5 hover:bg-blue-50 rounded transition-colors">
+                        <span class="font-medium" x-text="r.Name || r.name"></span>
+                        <span class="text-gray-400 ml-1" x-text="r.CustomerNumber || r.customer_number || ''"></span>
+                        <span class="text-gray-400 ml-1" x-text="r.CorporateIdentityNumber || r.corporate_identity_number || ''"></span>
+                      </button>
+                    </template>
+                    <div x-show="!searching && q.length>=2 && results.length===0" class="text-xs text-gray-400">Inga träffar</div>
+                  </div>
+                </div>
+              <% } %>
+            </td>
+            <td>
+              <% if (serviceTypes.includes('marknadskoordinator')) { %>
+                <span class="text-[10px] font-semibold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded mr-1">Marknad</span>
+              <% } %>
+              <% if (serviceTypes.includes('supportavtal')) { %>
+                <span class="text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded mr-1">Support</span>
+              <% } %>
+              <% if (hasHosting) { %>
+                <span class="text-[10px] font-semibold bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded mr-1">Webb</span>
+              <% } %>
+              <% if (hasProjects) { %>
+                <span class="text-[10px] font-semibold bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded">Projekt</span>
+              <% } %>
+              <% if (serviceTypes.length === 0 && !hasHosting && !hasProjects) { %>
+                <span class="text-xs text-gray-300">—</span>
+              <% } %>
+            </td>
+            <td class="text-right font-semibold num"><%= monthlyTotal > 0 ? formatSEK(monthlyTotal) : '—' %></td>
+          </tr>
+        <% }) %>
+        <% if (customers.length === 0) { %>
+          <tr><td colspan="6" class="text-center text-gray-400 py-8">Inga kunder ännu. Kör en Blikk-synk.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
