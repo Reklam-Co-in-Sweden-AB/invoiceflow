@@ -182,6 +182,10 @@ model Project {
   lastInvoicedMonth DateTime? @map("last_invoiced_month") // first day of last invoiced month
   pauseFrom         DateTime? @map("pause_from") // pause invoicing from this date
   pauseUntil        DateTime? @map("pause_until") // pause invoicing until this date
+  yourReference     String?   @map("your_reference") // Kundens referens (person)
+  ourReference      String?   @map("our_reference") // Vår referens (person)
+  buyersOrderRef    String?   @map("buyers_order_ref") // Kundens referensmärkning (ordernr)
+  invoiceText       String?   @map("invoice_text") // Fakturatext
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 

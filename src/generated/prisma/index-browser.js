@@ -250,6 +250,10 @@ exports.Prisma.ProjectScalarFieldEnum = {
   lastInvoicedMonth: 'lastInvoicedMonth',
   pauseFrom: 'pauseFrom',
   pauseUntil: 'pauseUntil',
+  yourReference: 'yourReference',
+  ourReference: 'ourReference',
+  buyersOrderRef: 'buyersOrderRef',
+  invoiceText: 'invoiceText',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

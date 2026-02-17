@@ -122,6 +122,20 @@ router.get('/debug/blikk-project/:blikkId', async (req, res) => {
   }
 });
 
+// Debug: show Blikk project fields
+router.get('/debug/blikk-project', async (req, res) => {
+  try {
+    const { BlikkClient } = require('../services/blikk-client');
+    const client = new BlikkClient();
+    const data = await client.get('/v1/Core/Projects', { page: 1, pageSize: 1 });
+    const items = data.items || data.data || data;
+    const first = Array.isArray(items) ? items[0] : null;
+    res.json({ fields: first ? Object.keys(first) : [], sample: first });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
 // Debug: show Visma data structures
 router.get('/debug/visma-projects', async (req, res) => {
   try {

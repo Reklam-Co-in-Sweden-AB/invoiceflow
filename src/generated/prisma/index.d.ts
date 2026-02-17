@@ -12196,6 +12196,10 @@ export namespace Prisma {
     lastInvoicedMonth: Date | null
     pauseFrom: Date | null
     pauseUntil: Date | null
+    yourReference: string | null
+    ourReference: string | null
+    buyersOrderRef: string | null
+    invoiceText: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -12220,6 +12224,10 @@ export namespace Prisma {
     lastInvoicedMonth: Date | null
     pauseFrom: Date | null
     pauseUntil: Date | null
+    yourReference: string | null
+    ourReference: string | null
+    buyersOrderRef: string | null
+    invoiceText: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -12244,6 +12252,10 @@ export namespace Prisma {
     lastInvoicedMonth: number
     pauseFrom: number
     pauseUntil: number
+    yourReference: number
+    ourReference: number
+    buyersOrderRef: number
+    invoiceText: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -12288,6 +12300,10 @@ export namespace Prisma {
     lastInvoicedMonth?: true
     pauseFrom?: true
     pauseUntil?: true
+    yourReference?: true
+    ourReference?: true
+    buyersOrderRef?: true
+    invoiceText?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -12312,6 +12328,10 @@ export namespace Prisma {
     lastInvoicedMonth?: true
     pauseFrom?: true
     pauseUntil?: true
+    yourReference?: true
+    ourReference?: true
+    buyersOrderRef?: true
+    invoiceText?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -12336,6 +12356,10 @@ export namespace Prisma {
     lastInvoicedMonth?: true
     pauseFrom?: true
     pauseUntil?: true
+    yourReference?: true
+    ourReference?: true
+    buyersOrderRef?: true
+    invoiceText?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -12447,6 +12471,10 @@ export namespace Prisma {
     lastInvoicedMonth: Date | null
     pauseFrom: Date | null
     pauseUntil: Date | null
+    yourReference: string | null
+    ourReference: string | null
+    buyersOrderRef: string | null
+    invoiceText: string | null
     createdAt: Date
     updatedAt: Date
     _count: ProjectCountAggregateOutputType | null
@@ -12490,6 +12518,10 @@ export namespace Prisma {
     lastInvoicedMonth?: boolean
     pauseFrom?: boolean
     pauseUntil?: boolean
+    yourReference?: boolean
+    ourReference?: boolean
+    buyersOrderRef?: boolean
+    invoiceText?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     customer?: boolean | Project$customerArgs<ExtArgs>
@@ -12520,6 +12552,10 @@ export namespace Prisma {
     lastInvoicedMonth?: boolean
     pauseFrom?: boolean
     pauseUntil?: boolean
+    yourReference?: boolean
+    ourReference?: boolean
+    buyersOrderRef?: boolean
+    invoiceText?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     customer?: boolean | Project$customerArgs<ExtArgs>
@@ -12546,6 +12582,10 @@ export namespace Prisma {
     lastInvoicedMonth?: boolean
     pauseFrom?: boolean
     pauseUntil?: boolean
+    yourReference?: boolean
+    ourReference?: boolean
+    buyersOrderRef?: boolean
+    invoiceText?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     customer?: boolean | Project$customerArgs<ExtArgs>
@@ -12572,11 +12612,15 @@ export namespace Prisma {
     lastInvoicedMonth?: boolean
     pauseFrom?: boolean
     pauseUntil?: boolean
+    yourReference?: boolean
+    ourReference?: boolean
+    buyersOrderRef?: boolean
+    invoiceText?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type ProjectOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "blikkProjectId" | "orderNumber" | "title" | "category" | "categoryColor" | "invoiceType" | "customerId" | "status" | "isCompleted" | "monthlyPrice" | "billingInterval" | "invoiceWeek" | "articleId" | "startDate" | "endDate" | "lastInvoicedMonth" | "pauseFrom" | "pauseUntil" | "createdAt" | "updatedAt", ExtArgs["result"]["project"]>
+  export type ProjectOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "blikkProjectId" | "orderNumber" | "title" | "category" | "categoryColor" | "invoiceType" | "customerId" | "status" | "isCompleted" | "monthlyPrice" | "billingInterval" | "invoiceWeek" | "articleId" | "startDate" | "endDate" | "lastInvoicedMonth" | "pauseFrom" | "pauseUntil" | "yourReference" | "ourReference" | "buyersOrderRef" | "invoiceText" | "createdAt" | "updatedAt", ExtArgs["result"]["project"]>
   export type ProjectInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     customer?: boolean | Project$customerArgs<ExtArgs>
     article?: boolean | Project$articleArgs<ExtArgs>
@@ -12623,6 +12667,10 @@ export namespace Prisma {
       lastInvoicedMonth: Date | null
       pauseFrom: Date | null
       pauseUntil: Date | null
+      yourReference: string | null
+      ourReference: string | null
+      buyersOrderRef: string | null
+      invoiceText: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["project"]>
@@ -13072,6 +13120,10 @@ export namespace Prisma {
     readonly lastInvoicedMonth: FieldRef<"Project", 'DateTime'>
     readonly pauseFrom: FieldRef<"Project", 'DateTime'>
     readonly pauseUntil: FieldRef<"Project", 'DateTime'>
+    readonly yourReference: FieldRef<"Project", 'String'>
+    readonly ourReference: FieldRef<"Project", 'String'>
+    readonly buyersOrderRef: FieldRef<"Project", 'String'>
+    readonly invoiceText: FieldRef<"Project", 'String'>
     readonly createdAt: FieldRef<"Project", 'DateTime'>
     readonly updatedAt: FieldRef<"Project", 'DateTime'>
   }
@@ -20532,6 +20584,10 @@ export namespace Prisma {
     lastInvoicedMonth: 'lastInvoicedMonth',
     pauseFrom: 'pauseFrom',
     pauseUntil: 'pauseUntil',
+    yourReference: 'yourReference',
+    ourReference: 'ourReference',
+    buyersOrderRef: 'buyersOrderRef',
+    invoiceText: 'invoiceText',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -21456,6 +21512,10 @@ export namespace Prisma {
     lastInvoicedMonth?: DateTimeNullableFilter<"Project"> | Date | string | null
     pauseFrom?: DateTimeNullableFilter<"Project"> | Date | string | null
     pauseUntil?: DateTimeNullableFilter<"Project"> | Date | string | null
+    yourReference?: StringNullableFilter<"Project"> | string | null
+    ourReference?: StringNullableFilter<"Project"> | string | null
+    buyersOrderRef?: StringNullableFilter<"Project"> | string | null
+    invoiceText?: StringNullableFilter<"Project"> | string | null
     createdAt?: DateTimeFilter<"Project"> | Date | string
     updatedAt?: DateTimeFilter<"Project"> | Date | string
     customer?: XOR<CustomerNullableScalarRelationFilter, CustomerWhereInput> | null
@@ -21485,6 +21545,10 @@ export namespace Prisma {
     lastInvoicedMonth?: SortOrderInput | SortOrder
     pauseFrom?: SortOrderInput | SortOrder
     pauseUntil?: SortOrderInput | SortOrder
+    yourReference?: SortOrderInput | SortOrder
+    ourReference?: SortOrderInput | SortOrder
+    buyersOrderRef?: SortOrderInput | SortOrder
+    invoiceText?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     customer?: CustomerOrderByWithRelationInput
@@ -21517,6 +21581,10 @@ export namespace Prisma {
     lastInvoicedMonth?: DateTimeNullableFilter<"Project"> | Date | string | null
     pauseFrom?: DateTimeNullableFilter<"Project"> | Date | string | null
     pauseUntil?: DateTimeNullableFilter<"Project"> | Date | string | null
+    yourReference?: StringNullableFilter<"Project"> | string | null
+    ourReference?: StringNullableFilter<"Project"> | string | null
+    buyersOrderRef?: StringNullableFilter<"Project"> | string | null
+    invoiceText?: StringNullableFilter<"Project"> | string | null
     createdAt?: DateTimeFilter<"Project"> | Date | string
     updatedAt?: DateTimeFilter<"Project"> | Date | string
     customer?: XOR<CustomerNullableScalarRelationFilter, CustomerWhereInput> | null
@@ -21546,6 +21614,10 @@ export namespace Prisma {
     lastInvoicedMonth?: SortOrderInput | SortOrder
     pauseFrom?: SortOrderInput | SortOrder
     pauseUntil?: SortOrderInput | SortOrder
+    yourReference?: SortOrderInput | SortOrder
+    ourReference?: SortOrderInput | SortOrder
+    buyersOrderRef?: SortOrderInput | SortOrder
+    invoiceText?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: ProjectCountOrderByAggregateInput
@@ -21578,6 +21650,10 @@ export namespace Prisma {
     lastInvoicedMonth?: DateTimeNullableWithAggregatesFilter<"Project"> | Date | string | null
     pauseFrom?: DateTimeNullableWithAggregatesFilter<"Project"> | Date | string | null
     pauseUntil?: DateTimeNullableWithAggregatesFilter<"Project"> | Date | string | null
+    yourReference?: StringNullableWithAggregatesFilter<"Project"> | string | null
+    ourReference?: StringNullableWithAggregatesFilter<"Project"> | string | null
+    buyersOrderRef?: StringNullableWithAggregatesFilter<"Project"> | string | null
+    invoiceText?: StringNullableWithAggregatesFilter<"Project"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Project"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Project"> | Date | string
   }
@@ -22809,6 +22885,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     customer?: CustomerCreateNestedOneWithoutProjectsInput
@@ -22838,6 +22918,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedCreateNestedManyWithoutProjectInput
@@ -22862,6 +22946,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneWithoutProjectsNestedInput
@@ -22891,6 +22979,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedUpdateManyWithoutProjectNestedInput
@@ -22918,6 +23010,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -22939,6 +23035,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -22963,6 +23063,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -24200,6 +24304,10 @@ export namespace Prisma {
     lastInvoicedMonth?: SortOrder
     pauseFrom?: SortOrder
     pauseUntil?: SortOrder
+    yourReference?: SortOrder
+    ourReference?: SortOrder
+    buyersOrderRef?: SortOrder
+    invoiceText?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24233,6 +24341,10 @@ export namespace Prisma {
     lastInvoicedMonth?: SortOrder
     pauseFrom?: SortOrder
     pauseUntil?: SortOrder
+    yourReference?: SortOrder
+    ourReference?: SortOrder
+    buyersOrderRef?: SortOrder
+    invoiceText?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24257,6 +24369,10 @@ export namespace Prisma {
     lastInvoicedMonth?: SortOrder
     pauseFrom?: SortOrder
     pauseUntil?: SortOrder
+    yourReference?: SortOrder
+    ourReference?: SortOrder
+    buyersOrderRef?: SortOrder
+    invoiceText?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -25871,6 +25987,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     article?: ArticleCreateNestedOneWithoutProjectsInput
@@ -25898,6 +26018,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedCreateNestedManyWithoutProjectInput
@@ -26059,6 +26183,10 @@ export namespace Prisma {
     lastInvoicedMonth?: DateTimeNullableFilter<"Project"> | Date | string | null
     pauseFrom?: DateTimeNullableFilter<"Project"> | Date | string | null
     pauseUntil?: DateTimeNullableFilter<"Project"> | Date | string | null
+    yourReference?: StringNullableFilter<"Project"> | string | null
+    ourReference?: StringNullableFilter<"Project"> | string | null
+    buyersOrderRef?: StringNullableFilter<"Project"> | string | null
+    invoiceText?: StringNullableFilter<"Project"> | string | null
     createdAt?: DateTimeFilter<"Project"> | Date | string
     updatedAt?: DateTimeFilter<"Project"> | Date | string
   }
@@ -26177,6 +26305,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     customer?: CustomerCreateNestedOneWithoutProjectsInput
@@ -26204,6 +26336,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedCreateNestedManyWithoutProjectInput
@@ -27517,6 +27653,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     customer?: CustomerCreateNestedOneWithoutProjectsInput
@@ -27545,6 +27685,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedCreateNestedManyWithoutProjectInput
@@ -27618,6 +27762,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneWithoutProjectsNestedInput
@@ -27646,6 +27794,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedUpdateManyWithoutProjectNestedInput
@@ -27709,6 +27861,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     customer?: CustomerCreateNestedOneWithoutProjectsInput
@@ -27737,6 +27893,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     invoiceRows?: ProjectInvoiceRowUncheckedCreateNestedManyWithoutProjectInput
@@ -27776,6 +27936,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneWithoutProjectsNestedInput
@@ -27804,6 +27968,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     invoiceRows?: ProjectInvoiceRowUncheckedUpdateManyWithoutProjectNestedInput
@@ -27827,6 +27995,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     customer?: CustomerCreateNestedOneWithoutProjectsInput
@@ -27855,6 +28027,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedCreateNestedManyWithoutProjectInput
@@ -27932,6 +28108,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneWithoutProjectsNestedInput
@@ -27960,6 +28140,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedUpdateManyWithoutProjectNestedInput
@@ -28243,6 +28427,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -28381,6 +28569,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     article?: ArticleUpdateOneWithoutProjectsNestedInput
@@ -28408,6 +28600,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedUpdateManyWithoutProjectNestedInput
@@ -28434,6 +28630,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -28513,6 +28713,10 @@ export namespace Prisma {
     lastInvoicedMonth?: Date | string | null
     pauseFrom?: Date | string | null
     pauseUntil?: Date | string | null
+    yourReference?: string | null
+    ourReference?: string | null
+    buyersOrderRef?: string | null
+    invoiceText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -28615,6 +28819,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneWithoutProjectsNestedInput
@@ -28642,6 +28850,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedUpdateManyWithoutProjectNestedInput
@@ -28668,6 +28880,10 @@ export namespace Prisma {
     lastInvoicedMonth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pauseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
