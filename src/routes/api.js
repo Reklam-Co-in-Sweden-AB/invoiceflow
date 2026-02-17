@@ -407,6 +407,18 @@ router.post('/sync/spiris-customers', async (req, res) => {
   }
 });
 
+// Sync projects from Blikk (bulk or incremental)
+router.post('/sync/blikk-projects', async (req, res) => {
+  try {
+    const force = req.query.force === '1';
+    const { syncBlikkProjects } = require('../services/blikk-sync');
+    const result = await syncBlikkProjects({ force });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Manually link a customer to Visma ID
 router.patch('/customers/:id/visma', async (req, res) => {
   const { vismaCustomerId } = req.body;

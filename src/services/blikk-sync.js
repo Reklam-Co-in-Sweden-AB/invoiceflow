@@ -251,7 +251,11 @@ async function syncBlikkContacts() {
 /**
  * Sync projects from Blikk to local projects table.
  */
-async function syncBlikkProjects() {
+/**
+ * @param {Object} options
+ * @param {boolean} options.force - Force detail fetch for all projects (bulk mode)
+ */
+async function syncBlikkProjects(options = {}) {
   const client = new BlikkClient();
   const all = [];
   let page = 1;
@@ -268,16 +272,34 @@ async function syncBlikkProjects() {
 
   let created = 0;
   let updated = 0;
+  let skipped = 0;
+  let detailFetched = 0;
 
   let customersLinked = 0;
 
   for (const listProj of all) {
-    // Fetch detail to get invoice fields (yourReference, invoiceText, etc.)
-    let proj;
-    try {
-      proj = await client.get(`/v1/Core/Projects/${listProj.id}`);
-    } catch (e) {
-      proj = listProj; // fallback to list data if detail fails
+    const blikkUpdated = listProj.updated ? new Date(listProj.updated) : null;
+
+    // Check if we need to fetch detail (invoice fields)
+    const existing = await prisma.project.findUnique({
+      where: { blikkProjectId: listProj.id },
+    });
+
+    const needsDetail = options.force
+      || !existing
+      || !existing.blikkUpdatedAt
+      || (blikkUpdated && blikkUpdated > existing.blikkUpdatedAt);
+
+    let proj = listProj;
+    if (needsDetail) {
+      try {
+        proj = await client.get(`/v1/Core/Projects/${listProj.id}`);
+        detailFetched++;
+      } catch (e) {
+        // fallback to list data if detail fails
+      }
+    } else {
+      skipped++;
     }
 
     // Find or create local customer from Blikk contact
@@ -312,28 +334,27 @@ async function syncBlikkProjects() {
       startDate: proj.startDate ? new Date(proj.startDate) : null,
       endDate: proj.endDate ? new Date(proj.endDate) : null,
       customerId: localCustomer?.id || null,
-      yourReference: proj.yourReference || null,
-      ourReference: proj.ourReference || null,
-      buyersOrderRef: proj.customerReferenceMarking || null,
-      invoiceText: proj.invoiceText || null,
+      blikkUpdatedAt: blikkUpdated,
+      ...(needsDetail && {
+        yourReference: proj.yourReference || null,
+        ourReference: proj.ourReference || null,
+        buyersOrderRef: proj.customerReferenceMarking || null,
+        invoiceText: proj.invoiceText || null,
+      }),
     };
-
-    const existing = await prisma.project.findUnique({
-      where: { blikkProjectId: proj.id },
-    });
 
     if (existing) {
       await prisma.project.update({ where: { id: existing.id }, data });
       updated++;
     } else {
       await prisma.project.create({
-        data: { ...data, blikkProjectId: proj.id },
+        data: { ...data, blikkProjectId: listProj.id },
       });
       created++;
     }
   }
 
-  return { total: all.length, created, updated, customersLinked };
+  return { total: all.length, created, updated, skipped, detailFetched, customersLinked };
 }
 
 module.exports = { syncBlikkInvoices, syncBlikkContacts, syncBlikkProjects };

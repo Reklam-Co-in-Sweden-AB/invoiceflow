@@ -12200,6 +12200,7 @@ export namespace Prisma {
     ourReference: string | null
     buyersOrderRef: string | null
     invoiceText: string | null
+    blikkUpdatedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -12228,6 +12229,7 @@ export namespace Prisma {
     ourReference: string | null
     buyersOrderRef: string | null
     invoiceText: string | null
+    blikkUpdatedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -12256,6 +12258,7 @@ export namespace Prisma {
     ourReference: number
     buyersOrderRef: number
     invoiceText: number
+    blikkUpdatedAt: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -12304,6 +12307,7 @@ export namespace Prisma {
     ourReference?: true
     buyersOrderRef?: true
     invoiceText?: true
+    blikkUpdatedAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -12332,6 +12336,7 @@ export namespace Prisma {
     ourReference?: true
     buyersOrderRef?: true
     invoiceText?: true
+    blikkUpdatedAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -12360,6 +12365,7 @@ export namespace Prisma {
     ourReference?: true
     buyersOrderRef?: true
     invoiceText?: true
+    blikkUpdatedAt?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -12475,6 +12481,7 @@ export namespace Prisma {
     ourReference: string | null
     buyersOrderRef: string | null
     invoiceText: string | null
+    blikkUpdatedAt: Date | null
     createdAt: Date
     updatedAt: Date
     _count: ProjectCountAggregateOutputType | null
@@ -12522,6 +12529,7 @@ export namespace Prisma {
     ourReference?: boolean
     buyersOrderRef?: boolean
     invoiceText?: boolean
+    blikkUpdatedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     customer?: boolean | Project$customerArgs<ExtArgs>
@@ -12556,6 +12564,7 @@ export namespace Prisma {
     ourReference?: boolean
     buyersOrderRef?: boolean
     invoiceText?: boolean
+    blikkUpdatedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     customer?: boolean | Project$customerArgs<ExtArgs>
@@ -12586,6 +12595,7 @@ export namespace Prisma {
     ourReference?: boolean
     buyersOrderRef?: boolean
     invoiceText?: boolean
+    blikkUpdatedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     customer?: boolean | Project$customerArgs<ExtArgs>
@@ -12616,11 +12626,12 @@ export namespace Prisma {
     ourReference?: boolean
     buyersOrderRef?: boolean
     invoiceText?: boolean
+    blikkUpdatedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type ProjectOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "blikkProjectId" | "orderNumber" | "title" | "category" | "categoryColor" | "invoiceType" | "customerId" | "status" | "isCompleted" | "monthlyPrice" | "billingInterval" | "invoiceWeek" | "articleId" | "startDate" | "endDate" | "lastInvoicedMonth" | "pauseFrom" | "pauseUntil" | "yourReference" | "ourReference" | "buyersOrderRef" | "invoiceText" | "createdAt" | "updatedAt", ExtArgs["result"]["project"]>
+  export type ProjectOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "blikkProjectId" | "orderNumber" | "title" | "category" | "categoryColor" | "invoiceType" | "customerId" | "status" | "isCompleted" | "monthlyPrice" | "billingInterval" | "invoiceWeek" | "articleId" | "startDate" | "endDate" | "lastInvoicedMonth" | "pauseFrom" | "pauseUntil" | "yourReference" | "ourReference" | "buyersOrderRef" | "invoiceText" | "blikkUpdatedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["project"]>
   export type ProjectInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     customer?: boolean | Project$customerArgs<ExtArgs>
     article?: boolean | Project$articleArgs<ExtArgs>
@@ -12671,6 +12682,7 @@ export namespace Prisma {
       ourReference: string | null
       buyersOrderRef: string | null
       invoiceText: string | null
+      blikkUpdatedAt: Date | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["project"]>
@@ -13124,6 +13136,7 @@ export namespace Prisma {
     readonly ourReference: FieldRef<"Project", 'String'>
     readonly buyersOrderRef: FieldRef<"Project", 'String'>
     readonly invoiceText: FieldRef<"Project", 'String'>
+    readonly blikkUpdatedAt: FieldRef<"Project", 'DateTime'>
     readonly createdAt: FieldRef<"Project", 'DateTime'>
     readonly updatedAt: FieldRef<"Project", 'DateTime'>
   }
@@ -20588,6 +20601,7 @@ export namespace Prisma {
     ourReference: 'ourReference',
     buyersOrderRef: 'buyersOrderRef',
     invoiceText: 'invoiceText',
+    blikkUpdatedAt: 'blikkUpdatedAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -21516,6 +21530,7 @@ export namespace Prisma {
     ourReference?: StringNullableFilter<"Project"> | string | null
     buyersOrderRef?: StringNullableFilter<"Project"> | string | null
     invoiceText?: StringNullableFilter<"Project"> | string | null
+    blikkUpdatedAt?: DateTimeNullableFilter<"Project"> | Date | string | null
     createdAt?: DateTimeFilter<"Project"> | Date | string
     updatedAt?: DateTimeFilter<"Project"> | Date | string
     customer?: XOR<CustomerNullableScalarRelationFilter, CustomerWhereInput> | null
@@ -21549,6 +21564,7 @@ export namespace Prisma {
     ourReference?: SortOrderInput | SortOrder
     buyersOrderRef?: SortOrderInput | SortOrder
     invoiceText?: SortOrderInput | SortOrder
+    blikkUpdatedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     customer?: CustomerOrderByWithRelationInput
@@ -21585,6 +21601,7 @@ export namespace Prisma {
     ourReference?: StringNullableFilter<"Project"> | string | null
     buyersOrderRef?: StringNullableFilter<"Project"> | string | null
     invoiceText?: StringNullableFilter<"Project"> | string | null
+    blikkUpdatedAt?: DateTimeNullableFilter<"Project"> | Date | string | null
     createdAt?: DateTimeFilter<"Project"> | Date | string
     updatedAt?: DateTimeFilter<"Project"> | Date | string
     customer?: XOR<CustomerNullableScalarRelationFilter, CustomerWhereInput> | null
@@ -21618,6 +21635,7 @@ export namespace Prisma {
     ourReference?: SortOrderInput | SortOrder
     buyersOrderRef?: SortOrderInput | SortOrder
     invoiceText?: SortOrderInput | SortOrder
+    blikkUpdatedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: ProjectCountOrderByAggregateInput
@@ -21654,6 +21672,7 @@ export namespace Prisma {
     ourReference?: StringNullableWithAggregatesFilter<"Project"> | string | null
     buyersOrderRef?: StringNullableWithAggregatesFilter<"Project"> | string | null
     invoiceText?: StringNullableWithAggregatesFilter<"Project"> | string | null
+    blikkUpdatedAt?: DateTimeNullableWithAggregatesFilter<"Project"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Project"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Project"> | Date | string
   }
@@ -22889,6 +22908,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     customer?: CustomerCreateNestedOneWithoutProjectsInput
@@ -22922,6 +22942,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedCreateNestedManyWithoutProjectInput
@@ -22950,6 +22971,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneWithoutProjectsNestedInput
@@ -22983,6 +23005,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedUpdateManyWithoutProjectNestedInput
@@ -23014,6 +23037,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -23039,6 +23063,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -23067,6 +23092,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -24308,6 +24334,7 @@ export namespace Prisma {
     ourReference?: SortOrder
     buyersOrderRef?: SortOrder
     invoiceText?: SortOrder
+    blikkUpdatedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24345,6 +24372,7 @@ export namespace Prisma {
     ourReference?: SortOrder
     buyersOrderRef?: SortOrder
     invoiceText?: SortOrder
+    blikkUpdatedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24373,6 +24401,7 @@ export namespace Prisma {
     ourReference?: SortOrder
     buyersOrderRef?: SortOrder
     invoiceText?: SortOrder
+    blikkUpdatedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -25991,6 +26020,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     article?: ArticleCreateNestedOneWithoutProjectsInput
@@ -26022,6 +26052,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedCreateNestedManyWithoutProjectInput
@@ -26187,6 +26218,7 @@ export namespace Prisma {
     ourReference?: StringNullableFilter<"Project"> | string | null
     buyersOrderRef?: StringNullableFilter<"Project"> | string | null
     invoiceText?: StringNullableFilter<"Project"> | string | null
+    blikkUpdatedAt?: DateTimeNullableFilter<"Project"> | Date | string | null
     createdAt?: DateTimeFilter<"Project"> | Date | string
     updatedAt?: DateTimeFilter<"Project"> | Date | string
   }
@@ -26309,6 +26341,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     customer?: CustomerCreateNestedOneWithoutProjectsInput
@@ -26340,6 +26373,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedCreateNestedManyWithoutProjectInput
@@ -27657,6 +27691,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     customer?: CustomerCreateNestedOneWithoutProjectsInput
@@ -27689,6 +27724,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedCreateNestedManyWithoutProjectInput
@@ -27766,6 +27802,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneWithoutProjectsNestedInput
@@ -27798,6 +27835,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedUpdateManyWithoutProjectNestedInput
@@ -27865,6 +27903,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     customer?: CustomerCreateNestedOneWithoutProjectsInput
@@ -27897,6 +27936,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     invoiceRows?: ProjectInvoiceRowUncheckedCreateNestedManyWithoutProjectInput
@@ -27940,6 +27980,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneWithoutProjectsNestedInput
@@ -27972,6 +28013,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     invoiceRows?: ProjectInvoiceRowUncheckedUpdateManyWithoutProjectNestedInput
@@ -27999,6 +28041,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     customer?: CustomerCreateNestedOneWithoutProjectsInput
@@ -28031,6 +28074,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedCreateNestedManyWithoutProjectInput
@@ -28112,6 +28156,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneWithoutProjectsNestedInput
@@ -28144,6 +28189,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedUpdateManyWithoutProjectNestedInput
@@ -28431,6 +28477,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -28573,6 +28620,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     article?: ArticleUpdateOneWithoutProjectsNestedInput
@@ -28604,6 +28652,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedUpdateManyWithoutProjectNestedInput
@@ -28634,6 +28683,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -28717,6 +28767,7 @@ export namespace Prisma {
     ourReference?: string | null
     buyersOrderRef?: string | null
     invoiceText?: string | null
+    blikkUpdatedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -28823,6 +28874,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneWithoutProjectsNestedInput
@@ -28854,6 +28906,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     priceOverrides?: ProjectPriceOverrideUncheckedUpdateManyWithoutProjectNestedInput
@@ -28884,6 +28937,7 @@ export namespace Prisma {
     ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     buyersOrderRef?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceText?: NullableStringFieldUpdateOperationsInput | string | null
+    blikkUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
