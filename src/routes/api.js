@@ -265,10 +265,11 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
 
           const draftData = {
             CustomerId: project.customer.vismaCustomerId,
-            YourReference: project.customer.yourReference || null,
-            BuyersOrderReference: project.customer.yourReference || null,
-            OurReference: project.customer.ourReference || null,
+            YourReference: project.yourReference || project.customer.yourReference || null,
+            BuyersOrderReference: project.buyersOrderRef || null,
+            OurReference: project.ourReference || project.customer.ourReference || null,
             InvoiceDate: now.toISOString().slice(0, 10),
+            ...(project.invoiceText && { InvoiceText: project.invoiceText }),
             Rows: rows,
           };
 
@@ -329,13 +330,14 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
               }
             }
 
-            const batchYourRef = split.yourReference || split.customer.yourReference || null;
+            const batchYourRef = split.yourReference || project.yourReference || split.customer.yourReference || null;
             const draftData = {
               CustomerId: split.customer.vismaCustomerId,
               YourReference: batchYourRef,
-              BuyersOrderReference: batchYourRef,
-              OurReference: split.customer.ourReference || null,
+              BuyersOrderReference: project.buyersOrderRef || null,
+              OurReference: project.ourReference || split.customer.ourReference || null,
               InvoiceDate: now.toISOString().slice(0, 10),
+              ...(project.invoiceText && { InvoiceText: project.invoiceText }),
               Rows: rows,
             };
 
@@ -761,10 +763,11 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
 
       const draftData = {
         CustomerId: project.customer.vismaCustomerId,
-        YourReference: project.customer.yourReference || null,
-        BuyersOrderReference: project.customer.yourReference || null,
-        OurReference: project.customer.ourReference || null,
+        YourReference: project.yourReference || project.customer.yourReference || null,
+        BuyersOrderReference: project.buyersOrderRef || null,
+        OurReference: project.ourReference || project.customer.ourReference || null,
         InvoiceDate: now.toISOString().slice(0, 10),
+        ...(project.invoiceText && { InvoiceText: project.invoiceText }),
         Rows: rows,
       };
 
@@ -817,13 +820,14 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
           }
         }
 
-        const yourRef = split.yourReference || split.customer.yourReference || null;
+        const yourRef = split.yourReference || project.yourReference || split.customer.yourReference || null;
         const draftData = {
           CustomerId: split.customer.vismaCustomerId,
           YourReference: yourRef,
-          BuyersOrderReference: yourRef,
-          OurReference: split.customer.ourReference || null,
+          BuyersOrderReference: project.buyersOrderRef || null,
+          OurReference: project.ourReference || split.customer.ourReference || null,
           InvoiceDate: now.toISOString().slice(0, 10),
+          ...(project.invoiceText && { InvoiceText: project.invoiceText }),
           Rows: rows,
         };
 

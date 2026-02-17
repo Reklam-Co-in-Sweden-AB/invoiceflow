@@ -271,7 +271,15 @@ async function syncBlikkProjects() {
 
   let customersLinked = 0;
 
-  for (const proj of all) {
+  for (const listProj of all) {
+    // Fetch detail to get invoice fields (yourReference, invoiceText, etc.)
+    let proj;
+    try {
+      proj = await client.get(`/v1/Core/Projects/${listProj.id}`);
+    } catch (e) {
+      proj = listProj; // fallback to list data if detail fails
+    }
+
     // Find or create local customer from Blikk contact
     const contactId = proj.customer?.id;
     let localCustomer = null;
@@ -304,6 +312,10 @@ async function syncBlikkProjects() {
       startDate: proj.startDate ? new Date(proj.startDate) : null,
       endDate: proj.endDate ? new Date(proj.endDate) : null,
       customerId: localCustomer?.id || null,
+      yourReference: proj.yourReference || null,
+      ourReference: proj.ourReference || null,
+      buyersOrderRef: proj.customerReferenceMarking || null,
+      invoiceText: proj.invoiceText || null,
     };
 
     const existing = await prisma.project.findUnique({
