@@ -9,14 +9,16 @@ const intervalMonths = { monthly: 1, quarterly: 3, semi_annual: 6, annual: 12 };
 // Build upcoming 12 months for price overview
 const upcoming = [];
 const now = new Date();
+const intMonths = intervalMonths[project.billingInterval] || 1;
+// Use nextInvoiceMonth as the anchor for billing cycle, fallback to current month
+const anchor = project.nextInvoiceMonth ? new Date(project.nextInvoiceMonth) : now;
 for (let i = 0; i < 12; i++) {
   const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
   const key = d.toISOString().slice(0, 10);
   const override = overrides.find(o => new Date(o.month).toISOString().slice(0, 10) === key);
-  const intMonths = intervalMonths[project.billingInterval] || 1;
-  // Check if this month should be invoiced based on interval
-  const monthDiff = (d.getFullYear() - now.getFullYear()) * 12 + d.getMonth() - now.getMonth();
-  const shouldInvoice = monthDiff % intMonths === 0;
+  // Check if this month aligns with the billing cycle anchored at nextInvoiceMonth
+  const monthDiff = (d.getFullYear() - anchor.getFullYear()) * 12 + d.getMonth() - anchor.getMonth();
+  const shouldInvoice = monthDiff >= 0 && monthDiff % intMonths === 0;
   upcoming.push({
     date: d,
     label: monthLabel(d),
