@@ -192,7 +192,7 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
             <!-- Non-invoiced projects first -->
             <% nonInvoiced.forEach(proj => { %>
               <% const suggestedWeek = suggestions[proj.id]; %>
-              <% const canBulkSend = proj.monthlyPrice && proj.customer && proj.customer.vismaCustomerId; %>
+              <% const canBulkSend = projEffectivePrice(proj) > 0 && proj.customer && proj.customer.vismaCustomerId; %>
               <tr class="hover:bg-gray-50/60 transition-colors border-b border-gray-50">
                 <td class="w-8 px-2">
                   <% if (canBulkSend) { %>
