@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session);
+const { Pool } = require('pg');
 const expressLayouts = require('express-ejs-layouts');
 const path = require('path');
 
@@ -21,9 +22,13 @@ app.set('layout', 'layout');
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+const sessionPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 1,
+});
 app.use(session({
   store: new pgSession({
-    conString: process.env.DATABASE_URL,
+    pool: sessionPool,
     tableName: 'session',
     createTableIfMissing: true,
   }),
