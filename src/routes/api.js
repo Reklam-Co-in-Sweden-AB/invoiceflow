@@ -127,12 +127,27 @@ router.get('/debug/blikk-project', async (req, res) => {
   try {
     const { BlikkClient } = require('../services/blikk-client');
     const client = new BlikkClient();
-    // Get list to find an ID, then fetch detail
-    const data = await client.get('/v1/Core/Projects', { page: 1, pageSize: 1 });
-    const items = data.items || data.data || data;
-    const first = Array.isArray(items) ? items[0] : null;
-    if (!first) return res.json({ error: 'No projects found' });
-    const detail = await client.get(`/v1/Core/Projects/${first.id}`);
+    const orderNum = req.query.order;
+    let proj = null;
+    if (orderNum) {
+      // Search through pages to find by order number
+      let page = 1;
+      while (!proj) {
+        const data = await client.get('/v1/Core/Projects', { page, pageSize: 100 });
+        const items = data.items || data.data || data;
+        if (!Array.isArray(items) || items.length === 0) break;
+        proj = items.find(p => String(p.orderNumber) === String(orderNum));
+        if (items.length < 100) break;
+        page++;
+      }
+      if (!proj) return res.json({ error: `Project with order number ${orderNum} not found` });
+    } else {
+      const data = await client.get('/v1/Core/Projects', { page: 1, pageSize: 1 });
+      const items = data.items || data.data || data;
+      proj = Array.isArray(items) ? items[0] : null;
+      if (!proj) return res.json({ error: 'No projects found' });
+    }
+    const detail = await client.get(`/v1/Core/Projects/${proj.id}`);
     res.json({ fields: Object.keys(detail), sample: detail });
   } catch (error) {
     res.json({ error: error.message });
