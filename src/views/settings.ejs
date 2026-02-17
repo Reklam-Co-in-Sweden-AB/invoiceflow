@@ -243,27 +243,42 @@
     var el = document.getElementById('spiris-sync-result');
     var page = 1;
     var totals = { matched: 0, created: 0, skipped: 0, total: 0 };
+    var maxRetries = 3;
 
     while (true) {
       el.innerHTML = '<span class="text-blue-600 font-semibold">Synkar sida ' + page + '... (' + totals.total + ' hämtade, ' + totals.matched + ' matchade)</span>';
-      try {
-        var res = await fetch('/api/sync/' + type + '?page=' + page, { method: 'POST' });
-        var data = await res.json();
-        if (!data.success) {
-          el.innerHTML = '<span class="text-red-600 font-semibold">&cross; Sida ' + page + ': ' + data.error + '</span>';
-          return;
-        }
-        totals.total += data.pageItems || 0;
-        totals.matched += data.matched || 0;
-        totals.created += data.created || 0;
-        totals.skipped += data.skipped || 0;
 
-        if (data.done) break;
-        page++;
-      } catch (e) {
-        el.innerHTML = '<span class="text-red-600 font-semibold">&cross; Nätverksfel på sida ' + page + ' (' + totals.matched + ' matchade hittills). Prova igen.</span>';
+      var success = false;
+      for (var attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          if (attempt > 1 || page > 1) await new Promise(r => setTimeout(r, 1500));
+          var res = await fetch('/api/sync/' + type + '?page=' + page, { method: 'POST' });
+          var data = await res.json();
+          if (!data.success) {
+            el.innerHTML = '<span class="text-red-600 font-semibold">&cross; Sida ' + page + ': ' + data.error + '</span>';
+            return;
+          }
+          totals.total += data.pageItems || 0;
+          totals.matched += data.matched || 0;
+          totals.created += data.created || 0;
+          totals.skipped += data.skipped || 0;
+          success = true;
+          break;
+        } catch (e) {
+          if (attempt < maxRetries) {
+            el.innerHTML = '<span class="text-amber-600 font-semibold">Sida ' + page + ' misslyckades, försöker igen (' + attempt + '/' + maxRetries + ')...</span>';
+            await new Promise(r => setTimeout(r, 3000));
+          }
+        }
+      }
+
+      if (!success) {
+        el.innerHTML = '<span class="text-red-600 font-semibold">&cross; Sida ' + page + ' misslyckades efter ' + maxRetries + ' försök (' + totals.matched + ' matchade hittills).</span>';
         return;
       }
+
+      if (data.done) break;
+      page++;
     }
 
     var parts = [];
