@@ -255,6 +255,69 @@
   }
   </script>
 
+  <!-- User management -->
+  <div class="card p-6" x-data="{ changingPw: null, newPw: '' }">
+    <h3 class="text-sm font-bold text-gray-900 mb-1">Användare</h3>
+    <p class="text-xs text-gray-400 mb-4">Hantera inloggningsuppgifter</p>
+
+    <div class="space-y-2 mb-5">
+      <% users.forEach(u => { %>
+        <div class="flex items-center gap-3 py-2 border-b border-gray-50">
+          <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold"><%= u.name.charAt(0).toUpperCase() %></div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-gray-900"><%= u.name %></div>
+            <div class="text-[11px] text-gray-400"><%= u.email %></div>
+          </div>
+
+          <!-- Change password inline -->
+          <template x-if="changingPw === <%= u.id %>">
+            <form method="POST" action="/settings/users/<%= u.id %>/password" class="flex items-center gap-2">
+              <input type="password" name="password" x-model="newPw" placeholder="Nytt lösenord" required minlength="4"
+                class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <button type="submit" class="btn btn-accent text-xs py-1">Spara</button>
+              <button type="button" @click="changingPw = null; newPw = ''" class="btn btn-ghost text-xs py-1">Avbryt</button>
+            </form>
+          </template>
+
+          <template x-if="changingPw !== <%= u.id %>">
+            <div class="flex items-center gap-2">
+              <button type="button" @click="changingPw = <%= u.id %>; newPw = ''" class="btn btn-ghost text-xs py-1">
+                Byt lösenord
+              </button>
+              <form method="POST" action="/settings/users/<%= u.id %>/delete" onsubmit="return confirm('Ta bort användare <%= u.name %>?')">
+                <button type="submit" class="btn btn-ghost text-xs py-1 text-red-500 hover:text-red-700">Ta bort</button>
+              </form>
+            </div>
+          </template>
+        </div>
+      <% }) %>
+    </div>
+
+    <div class="border-t border-gray-100 pt-4">
+      <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Ny användare</h4>
+      <form method="POST" action="/settings/users" class="grid grid-cols-3 gap-3">
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Namn</label>
+          <input type="text" name="name" required placeholder="Anna Andersson"
+            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">E-post</label>
+          <input type="email" name="email" required placeholder="anna@example.se"
+            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Lösenord</label>
+          <div class="flex gap-2">
+            <input type="password" name="password" required minlength="4" placeholder="Minst 4 tecken"
+              class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="submit" class="btn btn-accent text-xs">Skapa</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- General -->
   <div class="card p-6">
     <h3 class="text-sm font-bold text-gray-900 mb-4">System</h3>

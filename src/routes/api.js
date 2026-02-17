@@ -395,6 +395,30 @@ router.get('/spiris/customers/search', async (req, res) => {
   }
 });
 
+// Create manual project (e.g. hosting)
+router.post('/projects/create', async (req, res) => {
+  try {
+    const { title, customerId, articleId, monthlyPrice, billingInterval, category } = req.body;
+    if (!title) return res.json({ success: false, error: 'Titel krävs' });
+
+    const project = await prisma.project.create({
+      data: {
+        title,
+        category: category || 'Webbhotell & domän',
+        customerId: customerId ? Number(customerId) : null,
+        articleId: articleId ? Number(articleId) : null,
+        monthlyPrice: monthlyPrice ? parseFloat(monthlyPrice) : null,
+        billingInterval: billingInterval || 'monthly',
+        status: 'Pågående',
+      },
+    });
+
+    res.json({ success: true, project });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+});
+
 // Blikk status IDs
 const BLIKK_STATUS = { 'Att göra': 2301, 'Pågående': 2299, 'Avslutad': 2300 };
 
@@ -408,12 +432,14 @@ router.patch('/projects/:id/status', async (req, res) => {
     const project = await prisma.project.findUnique({ where: { id: Number(req.params.id) } });
     if (!project) return res.status(404).json({ success: false, error: 'Projekt hittades inte' });
 
-    // Update in Blikk
-    const { BlikkClient } = require('../services/blikk-client');
-    const client = new BlikkClient();
-    await client.put(`/v1/Core/Projects/${project.blikkProjectId}`, {
-      status: { id: blikkStatusId },
-    });
+    // Update in Blikk only if the project has a blikkProjectId
+    if (project.blikkProjectId) {
+      const { BlikkClient } = require('../services/blikk-client');
+      const client = new BlikkClient();
+      await client.put(`/v1/Core/Projects/${project.blikkProjectId}`, {
+        status: { id: blikkStatusId },
+      });
+    }
 
     // Update locally
     await prisma.project.update({

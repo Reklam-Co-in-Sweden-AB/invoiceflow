@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 const RECURRING_CATEGORIES = ['Din Marknadskoordinator', 'Supportavtal'];
 
 function classifyProject(p) {
+  if (p.category === 'Webbhotell & domän') return 'Webbhotell & domän';
   if (RECURRING_CATEGORIES.includes(p.category)) return p.category;
   if (p.invoiceType === 'Ongoing') return 'Löpande uppdrag';
   if (p.invoiceType === 'FixedPrice') return 'Fastprisprojekt';
@@ -18,6 +19,7 @@ function classifyProject(p) {
 const SECTION_ORDER = [
   'Din Marknadskoordinator',
   'Supportavtal',
+  'Webbhotell & domän',
   'Löpande uppdrag',
   'Fastprisprojekt',
   'Övrigt',
@@ -26,6 +28,7 @@ const SECTION_ORDER = [
 const SECTION_META = {
   'Din Marknadskoordinator': { icon: 'recurring', desc: 'Månadsvis marknadskoordinering' },
   'Supportavtal':           { icon: 'recurring', desc: 'Löpande supportavtal' },
+  'Webbhotell & domän':     { icon: 'hosting',   desc: 'Webbhotell och domännamn' },
   'Löpande uppdrag':        { icon: 'ongoing',   desc: 'Pågående uppdrag utan fast kategori' },
   'Fastprisprojekt':        { icon: 'fixed',     desc: 'Projekt med fast pris' },
   'Övrigt':                 { icon: 'other',     desc: 'Övriga projekt' },
@@ -35,11 +38,15 @@ const SECTION_META = {
  * Suggest invoice week (1-4) to distribute amounts evenly.
  * Projects with a set invoiceWeek are respected, new ones fill the lightest week.
  */
+const INTERVAL_MULTIPLIER = { monthly: 1, quarterly: 3, semi_annual: 6, annual: 12 };
+
 function effectivePrice(p) {
+  // Splits are already per-invoice amounts — don't multiply
   if (p.billingSplits && p.billingSplits.length > 0) {
     return p.billingSplits.reduce((s, sp) => s + sp.amount, 0);
   }
-  return p.monthlyPrice || 0;
+  const multiplier = INTERVAL_MULTIPLIER[p.billingInterval] || 1;
+  return (p.monthlyPrice || 0) * multiplier;
 }
 
 function suggestWeeks(projects) {
@@ -143,6 +150,9 @@ router.get('/', async (req, res) => {
     }
   }
 
+  const customers = await prisma.customer.findMany({ orderBy: { name: 'asc' } });
+  const articles = await prisma.article.findMany({ orderBy: { articleNumber: 'asc' } });
+
   res.render('projects', {
     projects: filtered,
     allProjects: projects,
@@ -154,6 +164,8 @@ router.get('/', async (req, res) => {
     showCompleted,
     weekFilter,
     activeWeek,
+    customers,
+    articles,
     pageTitle: 'Projekt',
   });
 });

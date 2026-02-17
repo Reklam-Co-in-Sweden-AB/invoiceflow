@@ -12429,7 +12429,7 @@ export namespace Prisma {
 
   export type ProjectGroupByOutputType = {
     id: number
-    blikkProjectId: number
+    blikkProjectId: number | null
     orderNumber: string | null
     title: string
     category: string | null
@@ -12605,7 +12605,7 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
-      blikkProjectId: number
+      blikkProjectId: number | null
       orderNumber: string | null
       title: string
       category: string | null
@@ -21438,7 +21438,7 @@ export namespace Prisma {
     OR?: ProjectWhereInput[]
     NOT?: ProjectWhereInput | ProjectWhereInput[]
     id?: IntFilter<"Project"> | number
-    blikkProjectId?: IntFilter<"Project"> | number
+    blikkProjectId?: IntNullableFilter<"Project"> | number | null
     orderNumber?: StringNullableFilter<"Project"> | string | null
     title?: StringFilter<"Project"> | string
     category?: StringNullableFilter<"Project"> | string | null
@@ -21467,7 +21467,7 @@ export namespace Prisma {
 
   export type ProjectOrderByWithRelationInput = {
     id?: SortOrder
-    blikkProjectId?: SortOrder
+    blikkProjectId?: SortOrderInput | SortOrder
     orderNumber?: SortOrderInput | SortOrder
     title?: SortOrder
     category?: SortOrderInput | SortOrder
@@ -21528,7 +21528,7 @@ export namespace Prisma {
 
   export type ProjectOrderByWithAggregationInput = {
     id?: SortOrder
-    blikkProjectId?: SortOrder
+    blikkProjectId?: SortOrderInput | SortOrder
     orderNumber?: SortOrderInput | SortOrder
     title?: SortOrder
     category?: SortOrderInput | SortOrder
@@ -21560,7 +21560,7 @@ export namespace Prisma {
     OR?: ProjectScalarWhereWithAggregatesInput[]
     NOT?: ProjectScalarWhereWithAggregatesInput | ProjectScalarWhereWithAggregatesInput[]
     id?: IntWithAggregatesFilter<"Project"> | number
-    blikkProjectId?: IntWithAggregatesFilter<"Project"> | number
+    blikkProjectId?: IntNullableWithAggregatesFilter<"Project"> | number | null
     orderNumber?: StringNullableWithAggregatesFilter<"Project"> | string | null
     title?: StringWithAggregatesFilter<"Project"> | string
     category?: StringNullableWithAggregatesFilter<"Project"> | string | null
@@ -22793,7 +22793,7 @@ export namespace Prisma {
   }
 
   export type ProjectCreateInput = {
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -22820,7 +22820,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedCreateInput = {
     id?: number
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -22846,7 +22846,7 @@ export namespace Prisma {
   }
 
   export type ProjectUpdateInput = {
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -22873,7 +22873,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -22900,7 +22900,7 @@ export namespace Prisma {
 
   export type ProjectCreateManyInput = {
     id?: number
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -22923,7 +22923,7 @@ export namespace Prisma {
   }
 
   export type ProjectUpdateManyMutationInput = {
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -22945,7 +22945,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -25855,7 +25855,7 @@ export namespace Prisma {
   }
 
   export type ProjectCreateWithoutCustomerInput = {
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -25881,7 +25881,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedCreateWithoutCustomerInput = {
     id?: number
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -26041,7 +26041,7 @@ export namespace Prisma {
     OR?: ProjectScalarWhereInput[]
     NOT?: ProjectScalarWhereInput | ProjectScalarWhereInput[]
     id?: IntFilter<"Project"> | number
-    blikkProjectId?: IntFilter<"Project"> | number
+    blikkProjectId?: IntNullableFilter<"Project"> | number | null
     orderNumber?: StringNullableFilter<"Project"> | string | null
     title?: StringFilter<"Project"> | string
     category?: StringNullableFilter<"Project"> | string | null
@@ -26161,7 +26161,7 @@ export namespace Prisma {
   }
 
   export type ProjectCreateWithoutArticleInput = {
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -26187,7 +26187,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedCreateWithoutArticleInput = {
     id?: number
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -27501,7 +27501,7 @@ export namespace Prisma {
   }
 
   export type ProjectCreateWithoutInvoiceRowsInput = {
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -27527,7 +27527,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedCreateWithoutInvoiceRowsInput = {
     id?: number
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -27602,7 +27602,7 @@ export namespace Prisma {
   }
 
   export type ProjectUpdateWithoutInvoiceRowsInput = {
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -27628,7 +27628,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedUpdateWithoutInvoiceRowsInput = {
     id?: IntFieldUpdateOperationsInput | number
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -27693,7 +27693,7 @@ export namespace Prisma {
   }
 
   export type ProjectCreateWithoutPriceOverridesInput = {
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -27719,7 +27719,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedCreateWithoutPriceOverridesInput = {
     id?: number
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -27760,7 +27760,7 @@ export namespace Prisma {
   }
 
   export type ProjectUpdateWithoutPriceOverridesInput = {
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -27786,7 +27786,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedUpdateWithoutPriceOverridesInput = {
     id?: IntFieldUpdateOperationsInput | number
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -27811,7 +27811,7 @@ export namespace Prisma {
   }
 
   export type ProjectCreateWithoutBillingSplitsInput = {
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -27837,7 +27837,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedCreateWithoutBillingSplitsInput = {
     id?: number
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -27916,7 +27916,7 @@ export namespace Prisma {
   }
 
   export type ProjectUpdateWithoutBillingSplitsInput = {
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -27942,7 +27942,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedUpdateWithoutBillingSplitsInput = {
     id?: IntFieldUpdateOperationsInput | number
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28226,7 +28226,7 @@ export namespace Prisma {
 
   export type ProjectCreateManyCustomerInput = {
     id?: number
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -28365,7 +28365,7 @@ export namespace Prisma {
   }
 
   export type ProjectUpdateWithoutCustomerInput = {
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28391,7 +28391,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedUpdateWithoutCustomerInput = {
     id?: IntFieldUpdateOperationsInput | number
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28417,7 +28417,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedUpdateManyWithoutCustomerInput = {
     id?: IntFieldUpdateOperationsInput | number
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28496,7 +28496,7 @@ export namespace Prisma {
 
   export type ProjectCreateManyArticleInput = {
     id?: number
-    blikkProjectId: number
+    blikkProjectId?: number | null
     orderNumber?: string | null
     title: string
     category?: string | null
@@ -28599,7 +28599,7 @@ export namespace Prisma {
   }
 
   export type ProjectUpdateWithoutArticleInput = {
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28625,7 +28625,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedUpdateWithoutArticleInput = {
     id?: IntFieldUpdateOperationsInput | number
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28651,7 +28651,7 @@ export namespace Prisma {
 
   export type ProjectUncheckedUpdateManyWithoutArticleInput = {
     id?: IntFieldUpdateOperationsInput | number
-    blikkProjectId?: IntFieldUpdateOperationsInput | number
+    blikkProjectId?: NullableIntFieldUpdateOperationsInput | number | null
     orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     title?: StringFieldUpdateOperationsInput | string
     category?: NullableStringFieldUpdateOperationsInput | string | null

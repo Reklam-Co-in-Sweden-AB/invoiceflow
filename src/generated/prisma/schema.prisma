@@ -164,7 +164,7 @@ model HostingSubscriptionLine {
 
 model Project {
   id                Int       @id @default(autoincrement())
-  blikkProjectId    Int       @unique @map("blikk_project_id")
+  blikkProjectId    Int?      @unique @map("blikk_project_id")
   orderNumber       String?   @map("order_number")
   title             String
   category          String?

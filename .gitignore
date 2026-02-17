@@ -7,3 +7,5 @@ certs/
 .DS_Store
 migrate-data.sql
 *.zip
+.vercel
+.env*.local

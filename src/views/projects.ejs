@@ -1,11 +1,14 @@
 <%
 function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+const INTERVAL_MULTIPLIER = { monthly: 1, quarterly: 3, semi_annual: 6, annual: 12 };
 function projEffectivePrice(p) {
   if (p.billingSplits && p.billingSplits.length > 0) return p.billingSplits.reduce((s, sp) => s + sp.amount, 0);
-  return p.monthlyPrice || 0;
+  const multiplier = INTERVAL_MULTIPLIER[p.billingInterval] || 1;
+  return (p.monthlyPrice || 0) * multiplier;
 }
 const sectionIcons = {
   recurring: '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>',
+  hosting:   '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>',
   ongoing:   '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
   fixed:     '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>',
   other:     '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/></svg>',
@@ -40,6 +43,13 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
         Återställ
+      </button>
+      <button
+        class="btn btn-ghost text-xs"
+        @click="showAddHosting = true"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        Lägg till
       </button>
       <button
         class="btn btn-ghost text-xs"
@@ -112,6 +122,7 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
         <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
           <%= name === 'Din Marknadskoordinator' ? 'bg-blue-50 text-blue-500' :
              name === 'Supportavtal' ? 'bg-emerald-50 text-emerald-500' :
+             name === 'Webbhotell & domän' ? 'bg-cyan-50 text-cyan-500' :
              name === 'Löpande uppdrag' ? 'bg-amber-50 text-amber-500' :
              name === 'Fastprisprojekt' ? 'bg-purple-50 text-purple-500' :
              'bg-gray-100 text-gray-400' %>">
@@ -350,6 +361,85 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
     </div>
   </div>
 
+  <!-- Add hosting project modal -->
+  <div x-show="showAddHosting" x-transition class="fixed inset-0 bg-black/30 z-50 flex items-center justify-center" @click.self="showAddHosting = false">
+    <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+      <h3 class="text-lg font-bold text-gray-900 mb-1">Lägg till projekt</h3>
+      <p class="text-xs text-gray-400 mb-4">Skapa ett manuellt projekt (t.ex. webbhotell, domän).</p>
+      <form @submit.prevent="
+        addHostingSending = true;
+        fetch('/api/projects/create', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            title: addHostingTitle,
+            customerId: addHostingCustomer || undefined,
+            articleId: addHostingArticle || undefined,
+            monthlyPrice: addHostingPrice || undefined,
+            billingInterval: addHostingInterval,
+            category: addHostingCategory
+          })
+        }).then(r => r.json()).then(d => {
+          addHostingSending = false;
+          if (d.success) { location.reload(); } else { alert(d.error); }
+        }).catch(e => { addHostingSending = false; alert(e.message); });
+      " class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Titel</label>
+          <input type="text" x-model="addHostingTitle" required placeholder="t.ex. Webbhotell — example.se" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Kategori</label>
+          <select x-model="addHostingCategory" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2">
+            <option value="Webbhotell & domän">Webbhotell & domän</option>
+            <option value="Din Marknadskoordinator">Din Marknadskoordinator</option>
+            <option value="Supportavtal">Supportavtal</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Kund</label>
+          <select x-model="addHostingCustomer" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2">
+            <option value="">Ingen kund</option>
+            <% customers.forEach(c => { %>
+              <option value="<%= c.id %>"><%= c.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Artikel</label>
+          <select x-model="addHostingArticle" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2">
+            <option value="">Ingen artikel</option>
+            <% articles.forEach(a => { %>
+              <option value="<%= a.id %>"><%= a.articleNumber %> — <%= a.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Pris/mån</label>
+            <input type="number" x-model="addHostingPrice" step="1" placeholder="0" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 num focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Intervall</label>
+            <select x-model="addHostingInterval" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2">
+              <option value="monthly">Månadsvis</option>
+              <option value="quarterly">Kvartalsvis</option>
+              <option value="semi_annual">Halvårsvis</option>
+              <option value="annual">Årsvis</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button type="submit" :disabled="addHostingSending || !addHostingTitle" class="btn btn-accent text-xs flex-1">
+            <span x-show="!addHostingSending">Skapa</span>
+            <span x-show="addHostingSending">Skapar...</span>
+          </button>
+          <button type="button" @click="showAddHosting = false" class="btn btn-ghost text-xs">Avbryt</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Floating bulk action bar -->
   <div x-show="selected.length > 0" x-transition
     class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-xl shadow-2xl px-5 py-3 flex items-center gap-4 z-50">
@@ -436,6 +526,14 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
       adjustPct: '',
       adjustCategory: '',
       adjustSending: false,
+      showAddHosting: false,
+      addHostingTitle: '',
+      addHostingCustomer: '',
+      addHostingArticle: '',
+      addHostingPrice: '',
+      addHostingInterval: 'monthly',
+      addHostingCategory: 'Webbhotell & domän',
+      addHostingSending: false,
 
       toggleProject(id, checked) {
         if (checked) {
