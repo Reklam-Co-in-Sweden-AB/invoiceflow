@@ -150,36 +150,58 @@
   </script>
 
   <!-- Spiris / Visma eEkonomi -->
+  <%
+    const vismaEnv = settings.visma_environment || 'sandbox';
+    const vismaPrefix = 'visma_' + vismaEnv + '_';
+    const isProduction = vismaEnv === 'production';
+  %>
   <div class="card p-6">
     <div class="flex items-center justify-between mb-5">
       <div>
         <h3 class="text-sm font-bold text-gray-900">Spiris (Visma eEkonomi)</h3>
-        <p class="text-xs text-gray-400 mt-0.5">OAuth 2.0 — sandbox</p>
+        <p class="text-xs text-gray-400 mt-0.5">OAuth 2.0</p>
       </div>
-      <% if (vismaToken) { %>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
-          <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>Ansluten
-          <% if (vismaToken.expiresAt) { %>
-            <span class="text-emerald-500 font-normal">(token giltig till <%= new Date(vismaToken.expiresAt).toLocaleString('sv-SE') %>)</span>
-          <% } %>
-        </span>
-      <% } else { %>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">
-          <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>Ej ansluten
-        </span>
-      <% } %>
+      <div class="flex items-center gap-2">
+        <!-- Environment toggle -->
+        <form method="POST" action="/settings/visma/environment" class="inline-flex">
+          <input type="hidden" name="environment" value="<%= isProduction ? 'sandbox' : 'production' %>">
+          <button type="submit" onclick="return confirm('Byta till <%= isProduction ? 'sandbox' : 'produktion' %>? Du behöver auktorisera om.')"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors
+              <%= isProduction ? 'bg-emerald-50 text-emerald-700 hover:bg-amber-50 hover:text-amber-700' : 'bg-amber-50 text-amber-700 hover:bg-emerald-50 hover:text-emerald-700' %>">
+            <span class="w-1.5 h-1.5 rounded-full <%= isProduction ? 'bg-emerald-500' : 'bg-amber-500' %>"></span>
+            <%= isProduction ? 'Produktion' : 'Sandbox' %>
+          </button>
+        </form>
+        <% if (vismaToken) { %>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
+            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>Ansluten
+            <% if (vismaToken.expiresAt) { %>
+              <span class="text-emerald-500 font-normal">(giltig till <%= new Date(vismaToken.expiresAt).toLocaleString('sv-SE') %>)</span>
+            <% } %>
+          </span>
+        <% } else { %>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">
+            <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>Ej ansluten
+          </span>
+        <% } %>
+      </div>
     </div>
 
     <form method="POST" action="/settings/visma">
+      <input type="hidden" name="environment" value="<%= vismaEnv %>">
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Client ID</label>
-          <input type="text" name="clientId" value="<%= settings.visma_client_id || '' %>" placeholder="reklamcoinswedenabsandbox">
+          <input type="text" name="clientId" value="<%= settings[vismaPrefix + 'client_id'] || '' %>" placeholder="<%= isProduction ? 'reklamcoinvoiceflow' : 'reklamcoinswedenabsandbox' %>">
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Client Secret</label>
-          <input type="password" name="clientSecret" value="<%= settings.visma_client_secret || '' %>" placeholder="••••••••">
+          <input type="password" name="clientSecret" value="<%= settings[vismaPrefix + 'client_secret'] || '' %>" placeholder="••••••••">
         </div>
+      </div>
+      <div class="mt-3">
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Redirect URI</label>
+        <input type="text" name="redirectUri" value="<%= settings[vismaPrefix + 'redirect_uri'] || '' %>" placeholder="https://invoiceflow.reklamco.se/settings/visma/callback">
       </div>
       <div class="mt-4 flex items-center gap-3">
         <button type="submit" class="btn btn-accent text-xs">Spara</button>

@@ -1,40 +1,64 @@
 const { PrismaClient } = require('../generated/prisma');
 const prisma = new PrismaClient();
 
+const VISMA_ENVS = {
+  sandbox: {
+    scopes: 'ea:api ea:sales ea:purchase ea:accounting offline_access',
+  },
+  production: {
+    scopes: 'offline_access ea:api ea:sales ea:accounting_readonly',
+  },
+};
+
 class SpirisClient {
   constructor() {
-    this.apiUrl = process.env.VISMA_API_URL || 'https://eaccountingapi.vismaonline.com';
-    this.identityUrl = process.env.VISMA_IDENTITY_URL || 'https://identity.vismaonline.com';
+    this.apiUrl = 'https://eaccountingapi.vismaonline.com';
+    this.identityUrl = 'https://identity.vismaonline.com';
     this.lastRequestTime = 0;
     this.minRequestInterval = 100; // 600 req/min ≈ 100ms
   }
 
+  async getEnvironment() {
+    const envSetting = await prisma.setting.findUnique({ where: { key: 'visma_environment' } });
+    return envSetting?.value || 'sandbox';
+  }
+
   async getCredentials() {
-    const clientIdSetting = await prisma.setting.findUnique({ where: { key: 'visma_client_id' } });
-    const clientSecretSetting = await prisma.setting.findUnique({ where: { key: 'visma_client_secret' } });
+    const env = await this.getEnvironment();
+    const prefix = `visma_${env}_`;
+
+    const clientIdSetting = await prisma.setting.findUnique({ where: { key: `${prefix}client_id` } });
+    const clientSecretSetting = await prisma.setting.findUnique({ where: { key: `${prefix}client_secret` } });
 
     const clientId = clientIdSetting?.value || process.env.VISMA_CLIENT_ID;
     const clientSecret = clientSecretSetting?.value || process.env.VISMA_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      throw new Error('Spiris credentials not configured');
+      throw new Error(`Spiris credentials not configured for ${env}`);
     }
 
-    return { clientId, clientSecret };
+    return { clientId, clientSecret, env };
+  }
+
+  async getRedirectUri() {
+    const env = await this.getEnvironment();
+    const setting = await prisma.setting.findUnique({ where: { key: `visma_${env}_redirect_uri` } });
+    return setting?.value || process.env.VISMA_REDIRECT_URI || 'http://localhost:3000/settings/visma/callback';
   }
 
   /**
    * Build the OAuth2 authorization URL for user login.
    */
   async getAuthorizationUrl(state) {
-    const { clientId } = await this.getCredentials();
-    const redirectUri = process.env.VISMA_REDIRECT_URI || 'http://localhost:3000/settings/visma/callback';
+    const { clientId, env } = await this.getCredentials();
+    const redirectUri = await this.getRedirectUri();
+    const scopes = VISMA_ENVS[env]?.scopes || VISMA_ENVS.sandbox.scopes;
 
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'offline_access ea:api ea:sales ea:accounting_readonly',
+      scope: scopes,
       state: state || 'default',
       prompt: 'select_account',
     });
@@ -47,7 +71,7 @@ class SpirisClient {
    */
   async exchangeCode(code) {
     const { clientId, clientSecret } = await this.getCredentials();
-    const redirectUri = process.env.VISMA_REDIRECT_URI || 'http://localhost:3000/settings/visma/callback';
+    const redirectUri = await this.getRedirectUri();
 
     const res = await fetch(`${this.identityUrl}/connect/token`, {
       method: 'POST',

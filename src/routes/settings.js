@@ -33,18 +33,48 @@ router.post('/blikk', async (req, res) => {
 });
 
 router.post('/visma', async (req, res) => {
-  const { clientId, clientSecret } = req.body;
+  const { clientId, clientSecret, redirectUri, environment } = req.body;
+  const env = environment || 'sandbox';
+  const prefix = `visma_${env}_`;
 
-  const keys = { visma_client_id: clientId, visma_client_secret: clientSecret };
+  const keys = {
+    [`${prefix}client_id`]: clientId,
+    [`${prefix}client_secret`]: clientSecret,
+    [`${prefix}redirect_uri`]: redirectUri,
+  };
   for (const [key, value] of Object.entries(keys)) {
-    await prisma.setting.upsert({
-      where: { key },
-      update: { value },
-      create: { key, value },
-    });
+    if (value) {
+      await prisma.setting.upsert({
+        where: { key },
+        update: { value },
+        create: { key, value },
+      });
+    }
   }
 
   res.redirect('/settings');
+});
+
+// Switch Visma environment (sandbox <-> production)
+router.post('/visma/environment', async (req, res) => {
+  const { environment } = req.body;
+  if (!['sandbox', 'production'].includes(environment)) {
+    return res.redirect('/settings?error=' + encodeURIComponent('Ogiltig miljö'));
+  }
+
+  await prisma.setting.upsert({
+    where: { key: 'visma_environment' },
+    update: { value: environment },
+    create: { key: 'visma_environment', value: environment },
+  });
+
+  // Clear existing token — user must re-authorize in new environment
+  const existingToken = await prisma.apiToken.findFirst({ where: { provider: 'visma' } });
+  if (existingToken) {
+    await prisma.apiToken.delete({ where: { id: existingToken.id } });
+  }
+
+  res.redirect('/settings?success=env_switched');
 });
 
 // Start Spiris OAuth2 flow
