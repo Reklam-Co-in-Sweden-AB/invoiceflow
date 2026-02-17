@@ -4,6 +4,7 @@
   "description": "Automatiserad faktureringshantering Blikk → Visma",
   "main": "src/server.js",
   "scripts": {
+    "build": "prisma generate",
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "db:migrate": "npx prisma migrate dev",
