@@ -234,6 +234,7 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
           const draftData = {
             CustomerId: project.customer.vismaCustomerId,
             YourReference: project.customer.yourReference || null,
+            BuyersOrderReference: project.customer.yourReference || null,
             OurReference: project.customer.ourReference || null,
             InvoiceDate: now.toISOString().slice(0, 10),
             Rows: rows,
@@ -296,9 +297,11 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
               }
             }
 
+            const batchYourRef = split.yourReference || split.customer.yourReference || null;
             const draftData = {
               CustomerId: split.customer.vismaCustomerId,
-              YourReference: split.yourReference || split.customer.yourReference || null,
+              YourReference: batchYourRef,
+              BuyersOrderReference: batchYourRef,
               OurReference: split.customer.ourReference || null,
               InvoiceDate: now.toISOString().slice(0, 10),
               Rows: rows,
@@ -727,6 +730,7 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
       const draftData = {
         CustomerId: project.customer.vismaCustomerId,
         YourReference: project.customer.yourReference || null,
+        BuyersOrderReference: project.customer.yourReference || null,
         OurReference: project.customer.ourReference || null,
         InvoiceDate: now.toISOString().slice(0, 10),
         Rows: rows,
@@ -781,9 +785,11 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
           }
         }
 
+        const yourRef = split.yourReference || split.customer.yourReference || null;
         const draftData = {
           CustomerId: split.customer.vismaCustomerId,
-          YourReference: split.yourReference || split.customer.yourReference || null,
+          YourReference: yourRef,
+          BuyersOrderReference: yourRef,
           OurReference: split.customer.ourReference || null,
           InvoiceDate: now.toISOString().slice(0, 10),
           Rows: rows,
