@@ -34,7 +34,7 @@ class SpirisClient {
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'ea:api ea:sales ea:purchase ea:accounting offline_access',
+      scope: 'offline_access ea:api ea:sales ea:accounting_readonly',
       state: state || 'default',
       prompt: 'select_account',
     });
