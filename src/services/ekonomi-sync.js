@@ -31,18 +31,31 @@ async function syncVismaFinancials(year) {
     dates.push(lastDayOfMonth(year, m));
   }
 
+  // Fetch all accounts for a date (paginated)
+  async function fetchAllBalances(date) {
+    let all = [];
+    let page = 1;
+    while (true) {
+      const data = await client.get(`/accountbalances/${date}`, { $page: page, $pagesize: 100 });
+      const items = data.Data || data.data || data;
+      const arr = Array.isArray(items) ? items : [];
+      all.push(...arr);
+      if (arr.length < 100) break;
+      page++;
+    }
+    return all;
+  }
+
   const balances = [];
   for (const date of dates) {
-    const data = await client.getAccountBalances(date);
-    const items = data.Data || data.data || data;
-    balances.push(Array.isArray(items) ? items : []);
+    balances.push(await fetchAllBalances(date));
   }
 
   // Helper: sum account balances matching a predicate
   function sumAccounts(items, predicate) {
     return items
       .filter(a => predicate(a.AccountNumber || a.accountNumber || 0))
-      .reduce((s, a) => s + (a.ClosingBalance || a.closingBalance || 0), 0);
+      .reduce((s, a) => s + (a.Balance || a.balance || 0), 0);
   }
 
   const saved = [];
