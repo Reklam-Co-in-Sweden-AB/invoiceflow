@@ -413,12 +413,33 @@ router.post('/sync/spiris-customers', async (req, res) => {
   }
 });
 
-// Sync projects from Blikk (bulk or incremental)
+// Sync projects from Blikk — incremental (non-force, for cron/quick sync)
 router.post('/sync/blikk-projects', async (req, res) => {
   try {
     const force = req.query.force === '1';
+    if (force) {
+      // Force mode: just list IDs (frontend should use batch endpoint)
+      const { listBlikkProjectIds } = require('../services/blikk-sync');
+      const projects = await listBlikkProjectIds();
+      return res.json({ success: true, total: projects.length, ids: projects.map(p => p.id) });
+    }
     const { syncBlikkProjects } = require('../services/blikk-sync');
-    const result = await syncBlikkProjects({ force });
+    const result = await syncBlikkProjects();
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Sync a batch of Blikk projects by IDs
+router.post('/sync/blikk-projects/batch', async (req, res) => {
+  try {
+    const { ids, force } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.json({ success: false, error: 'Inga projekt-ID angivna' });
+    }
+    const { syncBlikkProjectsBatch } = require('../services/blikk-sync');
+    const result = await syncBlikkProjectsBatch(ids, force !== false);
     res.json({ success: true, ...result });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -1040,6 +1061,125 @@ router.get('/preview/payment-plans', async (req, res) => {
       filtered: filtered.length,
       totalAmount: filtered.reduce((s, pp) => s + (pp.price || 0) * (pp.units || 1), 0),
       items: filtered,
+    });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// ── Visma recurring invoices probe ───────────────────────────
+
+// Debug: try multiple potential endpoints for recurring invoices
+router.get('/debug/visma-recurring', async (req, res) => {
+  try {
+    const { SpirisClient } = require('../services/spiris-client');
+    const client = new SpirisClient();
+    const results = {};
+
+    // Try potential endpoints
+    const paths = [
+      '/customerinvoicedrafts/recurring',
+      '/recurringinvoicedrafts',
+      '/recurringinvoices',
+      '/customerinvoicedrafts?$filter=IsRecurring eq true',
+      '/customerinvoicetemplates',
+      '/invoicetemplates',
+      '/subscriptions',
+    ];
+
+    for (const path of paths) {
+      try {
+        const data = await client.get(path, { $pagesize: 3 });
+        const items = data.Data || data.data || data;
+        results[path] = {
+          status: 'OK',
+          count: Array.isArray(items) ? items.length : (data.TotalCount || data.Meta?.TotalCount || '?'),
+          fields: Array.isArray(items) && items[0] ? Object.keys(items[0]) : [],
+          sample: Array.isArray(items) ? items.slice(0, 2) : items,
+        };
+      } catch (e) {
+        results[path] = { status: e.message.includes('404') ? '404' : 'ERROR', error: e.message.slice(0, 200) };
+      }
+    }
+
+    // Also try fetching regular invoices to see if there's a recurring flag
+    try {
+      const invoices = await client.get('/customerinvoices', { $pagesize: 3 });
+      const items = invoices.Data || invoices.data || invoices;
+      const first = Array.isArray(items) ? items[0] : null;
+      results['/customerinvoices (fields)'] = {
+        fields: first ? Object.keys(first) : [],
+        sample: first,
+      };
+    } catch (e) {
+      results['/customerinvoices'] = { status: 'ERROR', error: e.message.slice(0, 200) };
+    }
+
+    // Try drafts too
+    try {
+      const drafts = await client.get('/customerinvoicedrafts', { $pagesize: 3 });
+      const items = drafts.Data || drafts.data || drafts;
+      const first = Array.isArray(items) ? items[0] : null;
+      results['/customerinvoicedrafts (fields)'] = {
+        fields: first ? Object.keys(first) : [],
+        sample: first,
+      };
+    } catch (e) {
+      results['/customerinvoicedrafts'] = { status: 'ERROR', error: e.message.slice(0, 200) };
+    }
+
+    res.json(results);
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// ── Ekonomi sync & debug ─────────────────────────────────────
+
+// Trigger full ekonomi sync for a year
+router.post('/sync/ekonomi', async (req, res) => {
+  try {
+    const year = parseInt(req.query.year) || new Date().getFullYear();
+    const { syncAll } = require('../services/ekonomi-sync');
+    const result = await syncAll(year);
+    res.json({ success: true, year, ...result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Debug: inspect Blikk time report structure
+router.get('/debug/blikk-timereports', async (req, res) => {
+  try {
+    const { BlikkClient } = require('../services/blikk-client');
+    const client = new BlikkClient();
+    const data = await client.get('/v1/Core/TimeReports', { page: 1, pageSize: 5 });
+    const items = data.items || data.data || data;
+    const first = Array.isArray(items) ? items[0] : items;
+    res.json({
+      totalItemCount: data.totalItemCount,
+      fields: first ? Object.keys(first) : [],
+      sample: Array.isArray(items) ? items.slice(0, 3) : items,
+    });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// Debug: inspect Visma account balances
+router.get('/debug/visma-accountbalances', async (req, res) => {
+  try {
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+    const { SpirisClient } = require('../services/spiris-client');
+    const client = new SpirisClient();
+    const data = await client.getAccountBalances(date);
+    const items = data.Data || data.data || data;
+    const first = Array.isArray(items) ? items[0] : null;
+    res.json({
+      date,
+      count: Array.isArray(items) ? items.length : 0,
+      fields: first ? Object.keys(first) : [],
+      sample: Array.isArray(items) ? items.slice(0, 10) : items,
     });
   } catch (error) {
     res.json({ error: error.message });

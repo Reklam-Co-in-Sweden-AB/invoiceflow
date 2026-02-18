@@ -88,6 +88,11 @@ export type SyncLog = $Result.DefaultSelection<Prisma.$SyncLogPayload>
  * 
  */
 export type Setting = $Result.DefaultSelection<Prisma.$SettingPayload>
+/**
+ * Model FinancialSnapshot
+ * 
+ */
+export type FinancialSnapshot = $Result.DefaultSelection<Prisma.$FinancialSnapshotPayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -356,6 +361,16 @@ export class PrismaClient<
     * ```
     */
   get setting(): Prisma.SettingDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.financialSnapshot`: Exposes CRUD operations for the **FinancialSnapshot** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more FinancialSnapshots
+    * const financialSnapshots = await prisma.financialSnapshot.findMany()
+    * ```
+    */
+  get financialSnapshot(): Prisma.FinancialSnapshotDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -811,7 +826,8 @@ export namespace Prisma {
     ProjectBillingSplit: 'ProjectBillingSplit',
     ApiToken: 'ApiToken',
     SyncLog: 'SyncLog',
-    Setting: 'Setting'
+    Setting: 'Setting',
+    FinancialSnapshot: 'FinancialSnapshot'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -830,7 +846,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "customer" | "article" | "invoice" | "invoiceLine" | "batch" | "hostingSubscription" | "hostingSubscriptionLine" | "project" | "projectInvoiceRow" | "projectPriceOverride" | "projectBillingSplit" | "apiToken" | "syncLog" | "setting"
+      modelProps: "user" | "customer" | "article" | "invoice" | "invoiceLine" | "batch" | "hostingSubscription" | "hostingSubscriptionLine" | "project" | "projectInvoiceRow" | "projectPriceOverride" | "projectBillingSplit" | "apiToken" | "syncLog" | "setting" | "financialSnapshot"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1944,6 +1960,80 @@ export namespace Prisma {
           }
         }
       }
+      FinancialSnapshot: {
+        payload: Prisma.$FinancialSnapshotPayload<ExtArgs>
+        fields: Prisma.FinancialSnapshotFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.FinancialSnapshotFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FinancialSnapshotPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.FinancialSnapshotFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FinancialSnapshotPayload>
+          }
+          findFirst: {
+            args: Prisma.FinancialSnapshotFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FinancialSnapshotPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.FinancialSnapshotFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FinancialSnapshotPayload>
+          }
+          findMany: {
+            args: Prisma.FinancialSnapshotFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FinancialSnapshotPayload>[]
+          }
+          create: {
+            args: Prisma.FinancialSnapshotCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FinancialSnapshotPayload>
+          }
+          createMany: {
+            args: Prisma.FinancialSnapshotCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.FinancialSnapshotCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FinancialSnapshotPayload>[]
+          }
+          delete: {
+            args: Prisma.FinancialSnapshotDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FinancialSnapshotPayload>
+          }
+          update: {
+            args: Prisma.FinancialSnapshotUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FinancialSnapshotPayload>
+          }
+          deleteMany: {
+            args: Prisma.FinancialSnapshotDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.FinancialSnapshotUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.FinancialSnapshotUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FinancialSnapshotPayload>[]
+          }
+          upsert: {
+            args: Prisma.FinancialSnapshotUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$FinancialSnapshotPayload>
+          }
+          aggregate: {
+            args: Prisma.FinancialSnapshotAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateFinancialSnapshot>
+          }
+          groupBy: {
+            args: Prisma.FinancialSnapshotGroupByArgs<ExtArgs>
+            result: $Utils.Optional<FinancialSnapshotGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.FinancialSnapshotCountArgs<ExtArgs>
+            result: $Utils.Optional<FinancialSnapshotCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -2055,6 +2145,7 @@ export namespace Prisma {
     apiToken?: ApiTokenOmit
     syncLog?: SyncLogOmit
     setting?: SettingOmit
+    financialSnapshot?: FinancialSnapshotOmit
   }
 
   /* Types for Logging */
@@ -20444,6 +20535,1061 @@ export namespace Prisma {
 
 
   /**
+   * Model FinancialSnapshot
+   */
+
+  export type AggregateFinancialSnapshot = {
+    _count: FinancialSnapshotCountAggregateOutputType | null
+    _avg: FinancialSnapshotAvgAggregateOutputType | null
+    _sum: FinancialSnapshotSumAggregateOutputType | null
+    _min: FinancialSnapshotMinAggregateOutputType | null
+    _max: FinancialSnapshotMaxAggregateOutputType | null
+  }
+
+  export type FinancialSnapshotAvgAggregateOutputType = {
+    id: number | null
+  }
+
+  export type FinancialSnapshotSumAggregateOutputType = {
+    id: number | null
+  }
+
+  export type FinancialSnapshotMinAggregateOutputType = {
+    id: number | null
+    month: Date | null
+    type: string | null
+    data: string | null
+    syncedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type FinancialSnapshotMaxAggregateOutputType = {
+    id: number | null
+    month: Date | null
+    type: string | null
+    data: string | null
+    syncedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type FinancialSnapshotCountAggregateOutputType = {
+    id: number
+    month: number
+    type: number
+    data: number
+    syncedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type FinancialSnapshotAvgAggregateInputType = {
+    id?: true
+  }
+
+  export type FinancialSnapshotSumAggregateInputType = {
+    id?: true
+  }
+
+  export type FinancialSnapshotMinAggregateInputType = {
+    id?: true
+    month?: true
+    type?: true
+    data?: true
+    syncedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type FinancialSnapshotMaxAggregateInputType = {
+    id?: true
+    month?: true
+    type?: true
+    data?: true
+    syncedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type FinancialSnapshotCountAggregateInputType = {
+    id?: true
+    month?: true
+    type?: true
+    data?: true
+    syncedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type FinancialSnapshotAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which FinancialSnapshot to aggregate.
+     */
+    where?: FinancialSnapshotWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of FinancialSnapshots to fetch.
+     */
+    orderBy?: FinancialSnapshotOrderByWithRelationInput | FinancialSnapshotOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: FinancialSnapshotWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` FinancialSnapshots from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` FinancialSnapshots.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned FinancialSnapshots
+    **/
+    _count?: true | FinancialSnapshotCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: FinancialSnapshotAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: FinancialSnapshotSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: FinancialSnapshotMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: FinancialSnapshotMaxAggregateInputType
+  }
+
+  export type GetFinancialSnapshotAggregateType<T extends FinancialSnapshotAggregateArgs> = {
+        [P in keyof T & keyof AggregateFinancialSnapshot]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateFinancialSnapshot[P]>
+      : GetScalarType<T[P], AggregateFinancialSnapshot[P]>
+  }
+
+
+
+
+  export type FinancialSnapshotGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: FinancialSnapshotWhereInput
+    orderBy?: FinancialSnapshotOrderByWithAggregationInput | FinancialSnapshotOrderByWithAggregationInput[]
+    by: FinancialSnapshotScalarFieldEnum[] | FinancialSnapshotScalarFieldEnum
+    having?: FinancialSnapshotScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: FinancialSnapshotCountAggregateInputType | true
+    _avg?: FinancialSnapshotAvgAggregateInputType
+    _sum?: FinancialSnapshotSumAggregateInputType
+    _min?: FinancialSnapshotMinAggregateInputType
+    _max?: FinancialSnapshotMaxAggregateInputType
+  }
+
+  export type FinancialSnapshotGroupByOutputType = {
+    id: number
+    month: Date
+    type: string
+    data: string
+    syncedAt: Date
+    createdAt: Date
+    updatedAt: Date
+    _count: FinancialSnapshotCountAggregateOutputType | null
+    _avg: FinancialSnapshotAvgAggregateOutputType | null
+    _sum: FinancialSnapshotSumAggregateOutputType | null
+    _min: FinancialSnapshotMinAggregateOutputType | null
+    _max: FinancialSnapshotMaxAggregateOutputType | null
+  }
+
+  type GetFinancialSnapshotGroupByPayload<T extends FinancialSnapshotGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<FinancialSnapshotGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof FinancialSnapshotGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], FinancialSnapshotGroupByOutputType[P]>
+            : GetScalarType<T[P], FinancialSnapshotGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type FinancialSnapshotSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    month?: boolean
+    type?: boolean
+    data?: boolean
+    syncedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["financialSnapshot"]>
+
+  export type FinancialSnapshotSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    month?: boolean
+    type?: boolean
+    data?: boolean
+    syncedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["financialSnapshot"]>
+
+  export type FinancialSnapshotSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    month?: boolean
+    type?: boolean
+    data?: boolean
+    syncedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["financialSnapshot"]>
+
+  export type FinancialSnapshotSelectScalar = {
+    id?: boolean
+    month?: boolean
+    type?: boolean
+    data?: boolean
+    syncedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type FinancialSnapshotOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "month" | "type" | "data" | "syncedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["financialSnapshot"]>
+
+  export type $FinancialSnapshotPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "FinancialSnapshot"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      month: Date
+      type: string
+      data: string
+      syncedAt: Date
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["financialSnapshot"]>
+    composites: {}
+  }
+
+  type FinancialSnapshotGetPayload<S extends boolean | null | undefined | FinancialSnapshotDefaultArgs> = $Result.GetResult<Prisma.$FinancialSnapshotPayload, S>
+
+  type FinancialSnapshotCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<FinancialSnapshotFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: FinancialSnapshotCountAggregateInputType | true
+    }
+
+  export interface FinancialSnapshotDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['FinancialSnapshot'], meta: { name: 'FinancialSnapshot' } }
+    /**
+     * Find zero or one FinancialSnapshot that matches the filter.
+     * @param {FinancialSnapshotFindUniqueArgs} args - Arguments to find a FinancialSnapshot
+     * @example
+     * // Get one FinancialSnapshot
+     * const financialSnapshot = await prisma.financialSnapshot.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends FinancialSnapshotFindUniqueArgs>(args: SelectSubset<T, FinancialSnapshotFindUniqueArgs<ExtArgs>>): Prisma__FinancialSnapshotClient<$Result.GetResult<Prisma.$FinancialSnapshotPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one FinancialSnapshot that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {FinancialSnapshotFindUniqueOrThrowArgs} args - Arguments to find a FinancialSnapshot
+     * @example
+     * // Get one FinancialSnapshot
+     * const financialSnapshot = await prisma.financialSnapshot.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends FinancialSnapshotFindUniqueOrThrowArgs>(args: SelectSubset<T, FinancialSnapshotFindUniqueOrThrowArgs<ExtArgs>>): Prisma__FinancialSnapshotClient<$Result.GetResult<Prisma.$FinancialSnapshotPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first FinancialSnapshot that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FinancialSnapshotFindFirstArgs} args - Arguments to find a FinancialSnapshot
+     * @example
+     * // Get one FinancialSnapshot
+     * const financialSnapshot = await prisma.financialSnapshot.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends FinancialSnapshotFindFirstArgs>(args?: SelectSubset<T, FinancialSnapshotFindFirstArgs<ExtArgs>>): Prisma__FinancialSnapshotClient<$Result.GetResult<Prisma.$FinancialSnapshotPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first FinancialSnapshot that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FinancialSnapshotFindFirstOrThrowArgs} args - Arguments to find a FinancialSnapshot
+     * @example
+     * // Get one FinancialSnapshot
+     * const financialSnapshot = await prisma.financialSnapshot.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends FinancialSnapshotFindFirstOrThrowArgs>(args?: SelectSubset<T, FinancialSnapshotFindFirstOrThrowArgs<ExtArgs>>): Prisma__FinancialSnapshotClient<$Result.GetResult<Prisma.$FinancialSnapshotPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more FinancialSnapshots that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FinancialSnapshotFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all FinancialSnapshots
+     * const financialSnapshots = await prisma.financialSnapshot.findMany()
+     * 
+     * // Get first 10 FinancialSnapshots
+     * const financialSnapshots = await prisma.financialSnapshot.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const financialSnapshotWithIdOnly = await prisma.financialSnapshot.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends FinancialSnapshotFindManyArgs>(args?: SelectSubset<T, FinancialSnapshotFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FinancialSnapshotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a FinancialSnapshot.
+     * @param {FinancialSnapshotCreateArgs} args - Arguments to create a FinancialSnapshot.
+     * @example
+     * // Create one FinancialSnapshot
+     * const FinancialSnapshot = await prisma.financialSnapshot.create({
+     *   data: {
+     *     // ... data to create a FinancialSnapshot
+     *   }
+     * })
+     * 
+     */
+    create<T extends FinancialSnapshotCreateArgs>(args: SelectSubset<T, FinancialSnapshotCreateArgs<ExtArgs>>): Prisma__FinancialSnapshotClient<$Result.GetResult<Prisma.$FinancialSnapshotPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many FinancialSnapshots.
+     * @param {FinancialSnapshotCreateManyArgs} args - Arguments to create many FinancialSnapshots.
+     * @example
+     * // Create many FinancialSnapshots
+     * const financialSnapshot = await prisma.financialSnapshot.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends FinancialSnapshotCreateManyArgs>(args?: SelectSubset<T, FinancialSnapshotCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many FinancialSnapshots and returns the data saved in the database.
+     * @param {FinancialSnapshotCreateManyAndReturnArgs} args - Arguments to create many FinancialSnapshots.
+     * @example
+     * // Create many FinancialSnapshots
+     * const financialSnapshot = await prisma.financialSnapshot.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many FinancialSnapshots and only return the `id`
+     * const financialSnapshotWithIdOnly = await prisma.financialSnapshot.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends FinancialSnapshotCreateManyAndReturnArgs>(args?: SelectSubset<T, FinancialSnapshotCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FinancialSnapshotPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a FinancialSnapshot.
+     * @param {FinancialSnapshotDeleteArgs} args - Arguments to delete one FinancialSnapshot.
+     * @example
+     * // Delete one FinancialSnapshot
+     * const FinancialSnapshot = await prisma.financialSnapshot.delete({
+     *   where: {
+     *     // ... filter to delete one FinancialSnapshot
+     *   }
+     * })
+     * 
+     */
+    delete<T extends FinancialSnapshotDeleteArgs>(args: SelectSubset<T, FinancialSnapshotDeleteArgs<ExtArgs>>): Prisma__FinancialSnapshotClient<$Result.GetResult<Prisma.$FinancialSnapshotPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one FinancialSnapshot.
+     * @param {FinancialSnapshotUpdateArgs} args - Arguments to update one FinancialSnapshot.
+     * @example
+     * // Update one FinancialSnapshot
+     * const financialSnapshot = await prisma.financialSnapshot.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends FinancialSnapshotUpdateArgs>(args: SelectSubset<T, FinancialSnapshotUpdateArgs<ExtArgs>>): Prisma__FinancialSnapshotClient<$Result.GetResult<Prisma.$FinancialSnapshotPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more FinancialSnapshots.
+     * @param {FinancialSnapshotDeleteManyArgs} args - Arguments to filter FinancialSnapshots to delete.
+     * @example
+     * // Delete a few FinancialSnapshots
+     * const { count } = await prisma.financialSnapshot.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends FinancialSnapshotDeleteManyArgs>(args?: SelectSubset<T, FinancialSnapshotDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more FinancialSnapshots.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FinancialSnapshotUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many FinancialSnapshots
+     * const financialSnapshot = await prisma.financialSnapshot.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends FinancialSnapshotUpdateManyArgs>(args: SelectSubset<T, FinancialSnapshotUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more FinancialSnapshots and returns the data updated in the database.
+     * @param {FinancialSnapshotUpdateManyAndReturnArgs} args - Arguments to update many FinancialSnapshots.
+     * @example
+     * // Update many FinancialSnapshots
+     * const financialSnapshot = await prisma.financialSnapshot.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more FinancialSnapshots and only return the `id`
+     * const financialSnapshotWithIdOnly = await prisma.financialSnapshot.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends FinancialSnapshotUpdateManyAndReturnArgs>(args: SelectSubset<T, FinancialSnapshotUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FinancialSnapshotPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one FinancialSnapshot.
+     * @param {FinancialSnapshotUpsertArgs} args - Arguments to update or create a FinancialSnapshot.
+     * @example
+     * // Update or create a FinancialSnapshot
+     * const financialSnapshot = await prisma.financialSnapshot.upsert({
+     *   create: {
+     *     // ... data to create a FinancialSnapshot
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the FinancialSnapshot we want to update
+     *   }
+     * })
+     */
+    upsert<T extends FinancialSnapshotUpsertArgs>(args: SelectSubset<T, FinancialSnapshotUpsertArgs<ExtArgs>>): Prisma__FinancialSnapshotClient<$Result.GetResult<Prisma.$FinancialSnapshotPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of FinancialSnapshots.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FinancialSnapshotCountArgs} args - Arguments to filter FinancialSnapshots to count.
+     * @example
+     * // Count the number of FinancialSnapshots
+     * const count = await prisma.financialSnapshot.count({
+     *   where: {
+     *     // ... the filter for the FinancialSnapshots we want to count
+     *   }
+     * })
+    **/
+    count<T extends FinancialSnapshotCountArgs>(
+      args?: Subset<T, FinancialSnapshotCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], FinancialSnapshotCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a FinancialSnapshot.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FinancialSnapshotAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends FinancialSnapshotAggregateArgs>(args: Subset<T, FinancialSnapshotAggregateArgs>): Prisma.PrismaPromise<GetFinancialSnapshotAggregateType<T>>
+
+    /**
+     * Group by FinancialSnapshot.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {FinancialSnapshotGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends FinancialSnapshotGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: FinancialSnapshotGroupByArgs['orderBy'] }
+        : { orderBy?: FinancialSnapshotGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, FinancialSnapshotGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetFinancialSnapshotGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the FinancialSnapshot model
+   */
+  readonly fields: FinancialSnapshotFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for FinancialSnapshot.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__FinancialSnapshotClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the FinancialSnapshot model
+   */
+  interface FinancialSnapshotFieldRefs {
+    readonly id: FieldRef<"FinancialSnapshot", 'Int'>
+    readonly month: FieldRef<"FinancialSnapshot", 'DateTime'>
+    readonly type: FieldRef<"FinancialSnapshot", 'String'>
+    readonly data: FieldRef<"FinancialSnapshot", 'String'>
+    readonly syncedAt: FieldRef<"FinancialSnapshot", 'DateTime'>
+    readonly createdAt: FieldRef<"FinancialSnapshot", 'DateTime'>
+    readonly updatedAt: FieldRef<"FinancialSnapshot", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * FinancialSnapshot findUnique
+   */
+  export type FinancialSnapshotFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FinancialSnapshot
+     */
+    select?: FinancialSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the FinancialSnapshot
+     */
+    omit?: FinancialSnapshotOmit<ExtArgs> | null
+    /**
+     * Filter, which FinancialSnapshot to fetch.
+     */
+    where: FinancialSnapshotWhereUniqueInput
+  }
+
+  /**
+   * FinancialSnapshot findUniqueOrThrow
+   */
+  export type FinancialSnapshotFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FinancialSnapshot
+     */
+    select?: FinancialSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the FinancialSnapshot
+     */
+    omit?: FinancialSnapshotOmit<ExtArgs> | null
+    /**
+     * Filter, which FinancialSnapshot to fetch.
+     */
+    where: FinancialSnapshotWhereUniqueInput
+  }
+
+  /**
+   * FinancialSnapshot findFirst
+   */
+  export type FinancialSnapshotFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FinancialSnapshot
+     */
+    select?: FinancialSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the FinancialSnapshot
+     */
+    omit?: FinancialSnapshotOmit<ExtArgs> | null
+    /**
+     * Filter, which FinancialSnapshot to fetch.
+     */
+    where?: FinancialSnapshotWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of FinancialSnapshots to fetch.
+     */
+    orderBy?: FinancialSnapshotOrderByWithRelationInput | FinancialSnapshotOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for FinancialSnapshots.
+     */
+    cursor?: FinancialSnapshotWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` FinancialSnapshots from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` FinancialSnapshots.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of FinancialSnapshots.
+     */
+    distinct?: FinancialSnapshotScalarFieldEnum | FinancialSnapshotScalarFieldEnum[]
+  }
+
+  /**
+   * FinancialSnapshot findFirstOrThrow
+   */
+  export type FinancialSnapshotFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FinancialSnapshot
+     */
+    select?: FinancialSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the FinancialSnapshot
+     */
+    omit?: FinancialSnapshotOmit<ExtArgs> | null
+    /**
+     * Filter, which FinancialSnapshot to fetch.
+     */
+    where?: FinancialSnapshotWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of FinancialSnapshots to fetch.
+     */
+    orderBy?: FinancialSnapshotOrderByWithRelationInput | FinancialSnapshotOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for FinancialSnapshots.
+     */
+    cursor?: FinancialSnapshotWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` FinancialSnapshots from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` FinancialSnapshots.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of FinancialSnapshots.
+     */
+    distinct?: FinancialSnapshotScalarFieldEnum | FinancialSnapshotScalarFieldEnum[]
+  }
+
+  /**
+   * FinancialSnapshot findMany
+   */
+  export type FinancialSnapshotFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FinancialSnapshot
+     */
+    select?: FinancialSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the FinancialSnapshot
+     */
+    omit?: FinancialSnapshotOmit<ExtArgs> | null
+    /**
+     * Filter, which FinancialSnapshots to fetch.
+     */
+    where?: FinancialSnapshotWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of FinancialSnapshots to fetch.
+     */
+    orderBy?: FinancialSnapshotOrderByWithRelationInput | FinancialSnapshotOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing FinancialSnapshots.
+     */
+    cursor?: FinancialSnapshotWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` FinancialSnapshots from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` FinancialSnapshots.
+     */
+    skip?: number
+    distinct?: FinancialSnapshotScalarFieldEnum | FinancialSnapshotScalarFieldEnum[]
+  }
+
+  /**
+   * FinancialSnapshot create
+   */
+  export type FinancialSnapshotCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FinancialSnapshot
+     */
+    select?: FinancialSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the FinancialSnapshot
+     */
+    omit?: FinancialSnapshotOmit<ExtArgs> | null
+    /**
+     * The data needed to create a FinancialSnapshot.
+     */
+    data: XOR<FinancialSnapshotCreateInput, FinancialSnapshotUncheckedCreateInput>
+  }
+
+  /**
+   * FinancialSnapshot createMany
+   */
+  export type FinancialSnapshotCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many FinancialSnapshots.
+     */
+    data: FinancialSnapshotCreateManyInput | FinancialSnapshotCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * FinancialSnapshot createManyAndReturn
+   */
+  export type FinancialSnapshotCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FinancialSnapshot
+     */
+    select?: FinancialSnapshotSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the FinancialSnapshot
+     */
+    omit?: FinancialSnapshotOmit<ExtArgs> | null
+    /**
+     * The data used to create many FinancialSnapshots.
+     */
+    data: FinancialSnapshotCreateManyInput | FinancialSnapshotCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * FinancialSnapshot update
+   */
+  export type FinancialSnapshotUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FinancialSnapshot
+     */
+    select?: FinancialSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the FinancialSnapshot
+     */
+    omit?: FinancialSnapshotOmit<ExtArgs> | null
+    /**
+     * The data needed to update a FinancialSnapshot.
+     */
+    data: XOR<FinancialSnapshotUpdateInput, FinancialSnapshotUncheckedUpdateInput>
+    /**
+     * Choose, which FinancialSnapshot to update.
+     */
+    where: FinancialSnapshotWhereUniqueInput
+  }
+
+  /**
+   * FinancialSnapshot updateMany
+   */
+  export type FinancialSnapshotUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update FinancialSnapshots.
+     */
+    data: XOR<FinancialSnapshotUpdateManyMutationInput, FinancialSnapshotUncheckedUpdateManyInput>
+    /**
+     * Filter which FinancialSnapshots to update
+     */
+    where?: FinancialSnapshotWhereInput
+    /**
+     * Limit how many FinancialSnapshots to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * FinancialSnapshot updateManyAndReturn
+   */
+  export type FinancialSnapshotUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FinancialSnapshot
+     */
+    select?: FinancialSnapshotSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the FinancialSnapshot
+     */
+    omit?: FinancialSnapshotOmit<ExtArgs> | null
+    /**
+     * The data used to update FinancialSnapshots.
+     */
+    data: XOR<FinancialSnapshotUpdateManyMutationInput, FinancialSnapshotUncheckedUpdateManyInput>
+    /**
+     * Filter which FinancialSnapshots to update
+     */
+    where?: FinancialSnapshotWhereInput
+    /**
+     * Limit how many FinancialSnapshots to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * FinancialSnapshot upsert
+   */
+  export type FinancialSnapshotUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FinancialSnapshot
+     */
+    select?: FinancialSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the FinancialSnapshot
+     */
+    omit?: FinancialSnapshotOmit<ExtArgs> | null
+    /**
+     * The filter to search for the FinancialSnapshot to update in case it exists.
+     */
+    where: FinancialSnapshotWhereUniqueInput
+    /**
+     * In case the FinancialSnapshot found by the `where` argument doesn't exist, create a new FinancialSnapshot with this data.
+     */
+    create: XOR<FinancialSnapshotCreateInput, FinancialSnapshotUncheckedCreateInput>
+    /**
+     * In case the FinancialSnapshot was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<FinancialSnapshotUpdateInput, FinancialSnapshotUncheckedUpdateInput>
+  }
+
+  /**
+   * FinancialSnapshot delete
+   */
+  export type FinancialSnapshotDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FinancialSnapshot
+     */
+    select?: FinancialSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the FinancialSnapshot
+     */
+    omit?: FinancialSnapshotOmit<ExtArgs> | null
+    /**
+     * Filter which FinancialSnapshot to delete.
+     */
+    where: FinancialSnapshotWhereUniqueInput
+  }
+
+  /**
+   * FinancialSnapshot deleteMany
+   */
+  export type FinancialSnapshotDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which FinancialSnapshots to delete
+     */
+    where?: FinancialSnapshotWhereInput
+    /**
+     * Limit how many FinancialSnapshots to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * FinancialSnapshot without action
+   */
+  export type FinancialSnapshotDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the FinancialSnapshot
+     */
+    select?: FinancialSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the FinancialSnapshot
+     */
+    omit?: FinancialSnapshotOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -20703,6 +21849,19 @@ export namespace Prisma {
   };
 
   export type SettingScalarFieldEnum = (typeof SettingScalarFieldEnum)[keyof typeof SettingScalarFieldEnum]
+
+
+  export const FinancialSnapshotScalarFieldEnum: {
+    id: 'id',
+    month: 'month',
+    type: 'type',
+    data: 'data',
+    syncedAt: 'syncedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type FinancialSnapshotScalarFieldEnum = (typeof FinancialSnapshotScalarFieldEnum)[keyof typeof FinancialSnapshotScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -22120,6 +23279,71 @@ export namespace Prisma {
     value?: StringNullableWithAggregatesFilter<"Setting"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Setting"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Setting"> | Date | string
+  }
+
+  export type FinancialSnapshotWhereInput = {
+    AND?: FinancialSnapshotWhereInput | FinancialSnapshotWhereInput[]
+    OR?: FinancialSnapshotWhereInput[]
+    NOT?: FinancialSnapshotWhereInput | FinancialSnapshotWhereInput[]
+    id?: IntFilter<"FinancialSnapshot"> | number
+    month?: DateTimeFilter<"FinancialSnapshot"> | Date | string
+    type?: StringFilter<"FinancialSnapshot"> | string
+    data?: StringFilter<"FinancialSnapshot"> | string
+    syncedAt?: DateTimeFilter<"FinancialSnapshot"> | Date | string
+    createdAt?: DateTimeFilter<"FinancialSnapshot"> | Date | string
+    updatedAt?: DateTimeFilter<"FinancialSnapshot"> | Date | string
+  }
+
+  export type FinancialSnapshotOrderByWithRelationInput = {
+    id?: SortOrder
+    month?: SortOrder
+    type?: SortOrder
+    data?: SortOrder
+    syncedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type FinancialSnapshotWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    month_type?: FinancialSnapshotMonthTypeCompoundUniqueInput
+    AND?: FinancialSnapshotWhereInput | FinancialSnapshotWhereInput[]
+    OR?: FinancialSnapshotWhereInput[]
+    NOT?: FinancialSnapshotWhereInput | FinancialSnapshotWhereInput[]
+    month?: DateTimeFilter<"FinancialSnapshot"> | Date | string
+    type?: StringFilter<"FinancialSnapshot"> | string
+    data?: StringFilter<"FinancialSnapshot"> | string
+    syncedAt?: DateTimeFilter<"FinancialSnapshot"> | Date | string
+    createdAt?: DateTimeFilter<"FinancialSnapshot"> | Date | string
+    updatedAt?: DateTimeFilter<"FinancialSnapshot"> | Date | string
+  }, "id" | "month_type">
+
+  export type FinancialSnapshotOrderByWithAggregationInput = {
+    id?: SortOrder
+    month?: SortOrder
+    type?: SortOrder
+    data?: SortOrder
+    syncedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: FinancialSnapshotCountOrderByAggregateInput
+    _avg?: FinancialSnapshotAvgOrderByAggregateInput
+    _max?: FinancialSnapshotMaxOrderByAggregateInput
+    _min?: FinancialSnapshotMinOrderByAggregateInput
+    _sum?: FinancialSnapshotSumOrderByAggregateInput
+  }
+
+  export type FinancialSnapshotScalarWhereWithAggregatesInput = {
+    AND?: FinancialSnapshotScalarWhereWithAggregatesInput | FinancialSnapshotScalarWhereWithAggregatesInput[]
+    OR?: FinancialSnapshotScalarWhereWithAggregatesInput[]
+    NOT?: FinancialSnapshotScalarWhereWithAggregatesInput | FinancialSnapshotScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"FinancialSnapshot"> | number
+    month?: DateTimeWithAggregatesFilter<"FinancialSnapshot"> | Date | string
+    type?: StringWithAggregatesFilter<"FinancialSnapshot"> | string
+    data?: StringWithAggregatesFilter<"FinancialSnapshot"> | string
+    syncedAt?: DateTimeWithAggregatesFilter<"FinancialSnapshot"> | Date | string
+    createdAt?: DateTimeWithAggregatesFilter<"FinancialSnapshot"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"FinancialSnapshot"> | Date | string
   }
 
   export type UserCreateInput = {
@@ -23546,6 +24770,73 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type FinancialSnapshotCreateInput = {
+    month: Date | string
+    type: string
+    data: string
+    syncedAt: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type FinancialSnapshotUncheckedCreateInput = {
+    id?: number
+    month: Date | string
+    type: string
+    data: string
+    syncedAt: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type FinancialSnapshotUpdateInput = {
+    month?: DateTimeFieldUpdateOperationsInput | Date | string
+    type?: StringFieldUpdateOperationsInput | string
+    data?: StringFieldUpdateOperationsInput | string
+    syncedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type FinancialSnapshotUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    month?: DateTimeFieldUpdateOperationsInput | Date | string
+    type?: StringFieldUpdateOperationsInput | string
+    data?: StringFieldUpdateOperationsInput | string
+    syncedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type FinancialSnapshotCreateManyInput = {
+    id?: number
+    month: Date | string
+    type: string
+    data: string
+    syncedAt: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type FinancialSnapshotUpdateManyMutationInput = {
+    month?: DateTimeFieldUpdateOperationsInput | Date | string
+    type?: StringFieldUpdateOperationsInput | string
+    data?: StringFieldUpdateOperationsInput | string
+    syncedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type FinancialSnapshotUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    month?: DateTimeFieldUpdateOperationsInput | Date | string
+    type?: StringFieldUpdateOperationsInput | string
+    data?: StringFieldUpdateOperationsInput | string
+    syncedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -24738,6 +26029,49 @@ export namespace Prisma {
   }
 
   export type SettingSumOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type FinancialSnapshotMonthTypeCompoundUniqueInput = {
+    month: Date | string
+    type: string
+  }
+
+  export type FinancialSnapshotCountOrderByAggregateInput = {
+    id?: SortOrder
+    month?: SortOrder
+    type?: SortOrder
+    data?: SortOrder
+    syncedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type FinancialSnapshotAvgOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type FinancialSnapshotMaxOrderByAggregateInput = {
+    id?: SortOrder
+    month?: SortOrder
+    type?: SortOrder
+    data?: SortOrder
+    syncedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type FinancialSnapshotMinOrderByAggregateInput = {
+    id?: SortOrder
+    month?: SortOrder
+    type?: SortOrder
+    data?: SortOrder
+    syncedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type FinancialSnapshotSumOrderByAggregateInput = {
     id?: SortOrder
   }
 

@@ -287,3 +287,16 @@ model Setting {
 
   @@map("settings")
 }
+
+model FinancialSnapshot {
+  id        Int      @id @default(autoincrement())
+  month     DateTime
+  type      String // 'pl' | 'kpi' | 'service_revenue'
+  data      String // JSON
+  syncedAt  DateTime @map("synced_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([month, type])
+  @@map("financial_snapshots")
+}

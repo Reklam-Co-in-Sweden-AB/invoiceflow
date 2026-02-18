@@ -324,6 +324,16 @@ exports.Prisma.SettingScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.FinancialSnapshotScalarFieldEnum = {
+  id: 'id',
+  month: 'month',
+  type: 'type',
+  data: 'data',
+  syncedAt: 'syncedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -355,7 +365,8 @@ exports.Prisma.ModelName = {
   ProjectBillingSplit: 'ProjectBillingSplit',
   ApiToken: 'ApiToken',
   SyncLog: 'SyncLog',
-  Setting: 'Setting'
+  Setting: 'Setting',
+  FinancialSnapshot: 'FinancialSnapshot'
 };
 
 /**

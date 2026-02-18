@@ -88,20 +88,66 @@
   <script>
   async function syncBlikkProjects(force) {
     var el = document.getElementById('blikk-project-sync-result');
-    el.innerHTML = '<span class="text-blue-600 font-semibold">Synkar projekt från Blikk' + (force ? ' (alla)' : ' (ändrade)') + '...</span>';
+    var BATCH_SIZE = 10;
+
+    if (!force) {
+      // Incremental sync — single call
+      el.innerHTML = '<span class="text-blue-600 font-semibold">Synkar ändrade projekt...</span>';
+      try {
+        var res = await fetch('/api/sync/blikk-projects', { method: 'POST' });
+        if (!res.ok) { el.innerHTML = '<span class="text-red-600 font-semibold">&cross; Server svarade ' + res.status + '</span>'; return; }
+        var data = await res.json();
+        if (!data.success) { el.innerHTML = '<span class="text-red-600 font-semibold">&cross; ' + data.error + '</span>'; return; }
+        var parts = [data.total + ' projekt totalt'];
+        if (data.detailFetched) parts.push(data.detailFetched + ' detaljer hämtade');
+        if (data.created) parts.push(data.created + ' nya');
+        if (data.updated) parts.push(data.updated + ' uppdaterade');
+        el.innerHTML = '<span class="text-emerald-600 font-semibold">&check; ' + parts.join(', ') + '</span>';
+      } catch (e) { el.innerHTML = '<span class="text-red-600 font-semibold">&cross; Nätverksfel: ' + e.message + '</span>'; }
+      return;
+    }
+
+    // Force/bulk sync — batched
+    el.innerHTML = '<span class="text-blue-600 font-semibold">Hämtar projektlista från Blikk...</span>';
     try {
-      var res = await fetch('/api/sync/blikk-projects' + (force ? '?force=1' : ''), { method: 'POST' });
-      var data = await res.json();
-      if (!data.success) {
-        el.innerHTML = '<span class="text-red-600 font-semibold">&cross; ' + data.error + '</span>';
-        return;
+      // Phase 1: get all project IDs
+      var listRes = await fetch('/api/sync/blikk-projects?force=1', { method: 'POST' });
+      if (!listRes.ok) { el.innerHTML = '<span class="text-red-600 font-semibold">&cross; Server svarade ' + listRes.status + '</span>'; return; }
+      var listData = await listRes.json();
+      if (!listData.success) { el.innerHTML = '<span class="text-red-600 font-semibold">&cross; ' + listData.error + '</span>'; return; }
+
+      var allIds = listData.ids;
+      var total = allIds.length;
+      var totals = { created: 0, updated: 0, skipped: 0, detailFetched: 0 };
+
+      // Phase 2: process in batches
+      for (var i = 0; i < total; i += BATCH_SIZE) {
+        var batchIds = allIds.slice(i, i + BATCH_SIZE);
+        var done = Math.min(i + BATCH_SIZE, total);
+        var pct = Math.round((done / total) * 100);
+        el.innerHTML = '<span class="text-blue-600 font-semibold">Synkar projekt ' + done + '/' + total + ' (' + pct + '%)...</span>' +
+          '<div class="w-full bg-gray-200 rounded-full h-1.5 mt-1"><div class="bg-blue-600 h-1.5 rounded-full transition-all" style="width:' + pct + '%"></div></div>';
+
+        var batchRes = await fetch('/api/sync/blikk-projects/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: batchIds, force: true }),
+        });
+        if (!batchRes.ok) { el.innerHTML = '<span class="text-red-600 font-semibold">&cross; Batch misslyckades (status ' + batchRes.status + ') vid ' + done + '/' + total + '</span>'; return; }
+        var batchData = await batchRes.json();
+        if (!batchData.success) { el.innerHTML = '<span class="text-red-600 font-semibold">&cross; ' + batchData.error + ' vid ' + done + '/' + total + '</span>'; return; }
+
+        totals.created += batchData.created || 0;
+        totals.updated += batchData.updated || 0;
+        totals.skipped += batchData.skipped || 0;
+        totals.detailFetched += batchData.detailFetched || 0;
       }
-      var parts = [data.total + ' projekt totalt'];
-      if (data.detailFetched) parts.push(data.detailFetched + ' detaljer hämtade');
-      if (data.skipped) parts.push(data.skipped + ' oförändrade');
-      if (data.created) parts.push(data.created + ' nya');
-      if (data.updated) parts.push(data.updated + ' uppdaterade');
-      el.innerHTML = '<span class="text-emerald-600 font-semibold">&check; ' + parts.join(', ') + '</span>';
+
+      var parts = [total + ' projekt totalt'];
+      if (totals.detailFetched) parts.push(totals.detailFetched + ' detaljer hämtade');
+      if (totals.created) parts.push(totals.created + ' nya');
+      if (totals.updated) parts.push(totals.updated + ' uppdaterade');
+      el.innerHTML = '<span class="text-emerald-600 font-semibold">&check; Klar — ' + parts.join(', ') + '</span>';
     } catch (e) {
       el.innerHTML = '<span class="text-red-600 font-semibold">&cross; Nätverksfel: ' + e.message + '</span>';
     }

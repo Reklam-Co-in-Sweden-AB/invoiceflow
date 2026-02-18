@@ -308,6 +308,13 @@ class SpirisClient {
   async sendInvoiceEmail(invoiceId) {
     return this.post(`/customerinvoices/${invoiceId}/email`);
   }
+
+  /**
+   * Get account balances for a specific date (YYYY-MM-DD).
+   */
+  async getAccountBalances(date) {
+    return this.get(`/accountbalances/${date}`);
+  }
 }
 
 module.exports = { SpirisClient };

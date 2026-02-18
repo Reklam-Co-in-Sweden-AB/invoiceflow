@@ -28,7 +28,7 @@ class BlikkClient {
   async fetchWithRetry(url, options, retries = 3) {
     for (let i = 0; i < retries; i++) {
       const res = await fetch(url, options);
-      if (res.status === 429 && i < retries - 1) {
+      if ((res.status === 429 || res.status >= 500) && i < retries - 1) {
         const wait = (i + 1) * 1000; // 1s, 2s, 3s
         await new Promise(r => setTimeout(r, wait));
         continue;
@@ -243,6 +243,33 @@ class BlikkClient {
 
     while (true) {
       const data = await this.get('/v1/Core/PaymentPlans', {
+        page,
+        pageSize,
+        ...filter,
+      });
+
+      const items = data.items || data.data || data;
+      if (!Array.isArray(items) || items.length === 0) break;
+
+      all.push(...items);
+      if (items.length < pageSize) break;
+      page++;
+    }
+
+    return all;
+  }
+
+  /**
+   * Fetch all time reports with pagination.
+   * @param {Object} filter - Optional filters (e.g. fromDate, toDate)
+   */
+  async getAllTimeReports(filter = {}) {
+    const all = [];
+    let page = 1;
+    const pageSize = 100;
+
+    while (true) {
+      const data = await this.get('/v1/Core/TimeReports', {
         page,
         pageSize,
         ...filter,

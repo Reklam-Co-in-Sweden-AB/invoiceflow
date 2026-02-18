@@ -84,6 +84,7 @@ app.use('/batches', requireAuth, require('./routes/batches'));
 app.use('/hosting', requireAuth, require('./routes/hosting'));
 app.use('/projects', requireAuth, require('./routes/projects'));
 app.use('/customers', requireAuth, require('./routes/customers'));
+app.use('/ekonomi', requireAuth, require('./routes/ekonomi'));
 app.use('/settings', requireAuth, require('./routes/settings'));
 app.use('/api', requireAuth, require('./routes/api'));
 
