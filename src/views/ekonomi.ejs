@@ -44,8 +44,8 @@
           syncing = true;
           fetch('/api/sync/ekonomi?year=<%= year %>', { method: 'POST' })
             .then(r => r.json())
-            .then(() => { window.location.reload(); })
-            .catch(() => { syncing = false; alert('Synkning misslyckades'); })
+            .then(data => { if (data.success === false) { alert('Fel: ' + (data.error || JSON.stringify(data))); syncing = false; } else { window.location.reload(); } })
+            .catch(e => { syncing = false; alert('Synkning misslyckades: ' + e.message); })
         "
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

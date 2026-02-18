@@ -31,19 +31,19 @@ async function syncVismaFinancials(year) {
     dates.push(lastDayOfMonth(year, m));
   }
 
-  // Fetch all accounts for a date (paginated)
+  // Fetch all accounts for a date (try large page, fallback to unpaginated)
   async function fetchAllBalances(date) {
-    let all = [];
-    let page = 1;
-    while (true) {
-      const data = await client.get(`/accountbalances/${date}`, { $page: page, $pagesize: 100 });
+    // Try fetching with large page size first
+    try {
+      const data = await client.get(`/accountbalances/${date}`, { $pagesize: 500 });
       const items = data.Data || data.data || data;
-      const arr = Array.isArray(items) ? items : [];
-      all.push(...arr);
-      if (arr.length < 100) break;
-      page++;
-    }
-    return all;
+      if (Array.isArray(items)) return items;
+    } catch { /* fallback below */ }
+
+    // Fallback: no pagination params
+    const data = await client.get(`/accountbalances/${date}`);
+    const items = data.Data || data.data || data;
+    return Array.isArray(items) ? items : [];
   }
 
   const balances = [];
