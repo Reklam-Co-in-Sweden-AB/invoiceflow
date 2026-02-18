@@ -44,10 +44,11 @@
         @click="
           syncing = true;
           const year = <%= year %>;
+          const monthNames = ['okt','nov','dec','jan','feb','mar','apr','maj','jun','jul','aug','sep'];
           const steps = [
-            { type: 'pl', label: 'Resultatrapport (Visma)...' },
-            { type: 'kpi', label: 'KPI:er (Blikk)...' },
-            { type: 'service_revenue', label: 'Tjänsteintäkter...' },
+            { type: 'pl', label: 'Resultatrapport' },
+            { type: 'service_revenue', label: 'Tjänsteintäkter' },
+            { type: 'kpi', label: 'KPI:er' },
           ];
           (async () => {
             syncStatus = 'Rensar gammal data...';
@@ -55,12 +56,14 @@
               await fetch('/api/sync/ekonomi/cleanup?year=' + year, { method: 'POST' });
             } catch (e) { /* ignore cleanup errors */ }
             for (const step of steps) {
-              syncStatus = step.label;
-              try {
-                const r = await fetch('/api/sync/ekonomi?year=' + year + '&type=' + step.type, { method: 'POST' });
-                const data = await r.json();
-                if (data.success === false) { alert('Fel vid ' + step.label + ': ' + (data.error || '')); syncing = false; return; }
-              } catch (e) { alert('Nätverksfel vid ' + step.label + ': ' + e.message); syncing = false; return; }
+              for (let m = 0; m < 12; m++) {
+                syncStatus = step.label + ' — ' + monthNames[m] + '...';
+                try {
+                  const r = await fetch('/api/sync/ekonomi?year=' + year + '&type=' + step.type + '&month=' + m, { method: 'POST' });
+                  const data = await r.json();
+                  if (data.success === false) { alert('Fel vid ' + step.label + ' ' + monthNames[m] + ': ' + (data.error || '')); syncing = false; return; }
+                } catch (e) { alert('Nätverksfel vid ' + step.label + ' ' + monthNames[m] + ': ' + e.message); syncing = false; return; }
+              }
             }
             window.location.reload();
           })();

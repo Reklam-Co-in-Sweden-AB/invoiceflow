@@ -311,9 +311,167 @@ async function syncAll(year) {
   return results;
 }
 
+// ── Single-month sync functions (for serverless timeout safety) ──
+
+async function syncVismaFinancialsMonth(year, fyIndex) {
+  const client = new SpirisClient();
+  const { calYear, calMonth } = fyCalendar(year, fyIndex);
+  const fromDate = firstDayStr(calYear, calMonth);
+  const toDate = lastDayStr(calYear, calMonth);
+
+  const vouchers = await fetchVouchers(client, fromDate, toDate);
+
+  const acctSums = {};
+  for (const v of vouchers) {
+    for (const row of (v.Rows || [])) {
+      const a = row.AccountNumber;
+      if (!acctSums[a]) acctSums[a] = { debit: 0, credit: 0 };
+      acctSums[a].debit += row.DebitAmount || 0;
+      acctSums[a].credit += row.CreditAmount || 0;
+    }
+  }
+
+  function netGroup(from, to) {
+    let d = 0, c = 0;
+    for (const [a, s] of Object.entries(acctSums)) {
+      const n = parseInt(a);
+      if (n >= from && n < to) { d += s.debit; c += s.credit; }
+    }
+    return c - d;
+  }
+
+  const intakter = netGroup(3000, 4000);
+  const ravaror = -netGroup(4000, 5000);
+  const ovriga_kostnader = -netGroup(5000, 7000);
+  const personalkostnad = -netGroup(7000, 7900);
+  const ovriga_rorelsekostnader = -netGroup(7900, 8000);
+  const finansiella = netGroup(8000, 8800);
+  const skatt = -netGroup(8900, 8999);
+
+  let kassa_bank = 0;
+  try {
+    kassa_bank = await fetchKassaBank(client, toDate);
+  } catch (e) {
+    console.error(`Kassa/bank for ${toDate}: ${e.message}`);
+  }
+
+  const month = fyMonthStart(year, fyIndex);
+  const data = JSON.stringify({
+    intakter: Math.round(intakter),
+    ravaror: Math.round(ravaror),
+    ovriga_kostnader: Math.round(ovriga_kostnader),
+    personalkostnad: Math.round(personalkostnad),
+    ovriga_rorelsekostnader: Math.round(ovriga_rorelsekostnader),
+    finansiella: Math.round(finansiella),
+    skatt: Math.round(skatt),
+    kassa_bank: Math.round(kassa_bank),
+  });
+
+  await prisma.financialSnapshot.upsert({
+    where: { month_type: { month, type: 'pl' } },
+    update: { data, syncedAt: new Date() },
+    create: { month, type: 'pl', data, syncedAt: new Date() },
+  });
+
+  return { month: month.toISOString().slice(0, 7), vouchers: vouchers.length };
+}
+
+async function syncServiceRevenueMonth(year, fyIndex) {
+  const client = new SpirisClient();
+  const { calYear, calMonth } = fyCalendar(year, fyIndex);
+  const fromDate = firstDayStr(calYear, calMonth);
+  const toDate = lastDayStr(calYear, calMonth);
+
+  const vouchers = await fetchVouchers(client, fromDate, toDate);
+
+  const totals = { tjanster: 0, varor: 0, dima: 0, supportavtal: 0, hemsidor: 0, layout: 0 };
+  for (const v of vouchers) {
+    for (const row of (v.Rows || [])) {
+      const cat = SERVICE_ACCOUNTS[row.AccountNumber];
+      if (cat) {
+        totals[cat] += (row.CreditAmount || 0) - (row.DebitAmount || 0);
+      }
+    }
+  }
+
+  const month = fyMonthStart(year, fyIndex);
+  const data = JSON.stringify({
+    tjanster: Math.round(totals.tjanster),
+    varor: Math.round(totals.varor),
+    dima: Math.round(totals.dima),
+    supportavtal: Math.round(totals.supportavtal),
+    hemsidor: Math.round(totals.hemsidor),
+    layout: Math.round(totals.layout),
+  });
+
+  await prisma.financialSnapshot.upsert({
+    where: { month_type: { month, type: 'service_revenue' } },
+    update: { data, syncedAt: new Date() },
+    create: { month, type: 'service_revenue', data, syncedAt: new Date() },
+  });
+
+  return { month: month.toISOString().slice(0, 7) };
+}
+
+async function syncBlikkKpisMonth(year, fyIndex) {
+  const client = new BlikkClient();
+  const { calYear, calMonth } = fyCalendar(year, fyIndex);
+  const fromDate = firstDayStr(calYear, calMonth);
+  const toDate = lastDayStr(calYear, calMonth);
+
+  const reports = await client.getAllTimeReports({ fromDate, toDate });
+
+  let rapporterade_h = 0, interntid_h = 0, franvaro_h = 0, debiterade_h = 0;
+  for (const r of reports) {
+    const hours = r.hours || r.quantity || r.time || 0;
+    rapporterade_h += hours;
+    const isInternal = r.isInternal || r.internal || r.projectType === 'Internal' || false;
+    const isAbsence = r.isAbsence || r.absence || r.type === 'Absence' || false;
+    const isBillable = r.isBillable || r.billable || r.invoiceable || false;
+    if (isAbsence) franvaro_h += hours;
+    else if (isInternal) interntid_h += hours;
+    else if (isBillable) debiterade_h += hours;
+  }
+
+  const month = fyMonthStart(year, fyIndex);
+  const tillganglig = rapporterade_h - franvaro_h;
+  const debiteringsgrad = tillganglig > 0 ? Math.round((debiterade_h / tillganglig) * 1000) / 10 : 0;
+
+  let intakt_per_h = 0;
+  try {
+    const plSnapshot = await prisma.financialSnapshot.findUnique({
+      where: { month_type: { month, type: 'pl' } },
+    });
+    if (plSnapshot && debiterade_h > 0) {
+      const pl = JSON.parse(plSnapshot.data);
+      intakt_per_h = Math.round(pl.intakter / debiterade_h);
+    }
+  } catch { /* P&L not yet synced */ }
+
+  const data = JSON.stringify({
+    rapporterade_h: Math.round(rapporterade_h * 10) / 10,
+    interntid_h: Math.round(interntid_h * 10) / 10,
+    franvaro_h: Math.round(franvaro_h * 10) / 10,
+    debiterade_h: Math.round(debiterade_h * 10) / 10,
+    debiteringsgrad,
+    intakt_per_h,
+  });
+
+  await prisma.financialSnapshot.upsert({
+    where: { month_type: { month, type: 'kpi' } },
+    update: { data, syncedAt: new Date() },
+    create: { month, type: 'kpi', data, syncedAt: new Date() },
+  });
+
+  return { month: month.toISOString().slice(0, 7) };
+}
+
 module.exports = {
   syncVismaFinancials,
   syncBlikkKpis,
   syncServiceRevenue,
   syncAll,
+  syncVismaFinancialsMonth,
+  syncServiceRevenueMonth,
+  syncBlikkKpisMonth,
 };

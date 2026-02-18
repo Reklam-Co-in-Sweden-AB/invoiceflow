@@ -1213,10 +1213,31 @@ router.patch('/ekonomi/budget', async (req, res) => {
 // ── Ekonomi sync & debug ─────────────────────────────────────
 
 // Trigger ekonomi sync — supports step-by-step: ?type=pl|kpi|service_revenue or all
+// Add &month=0..11 to sync a single FY month (avoids serverless timeout)
 router.post('/sync/ekonomi', async (req, res) => {
   try {
     const year = parseInt(req.query.year) || new Date().getFullYear();
     const type = req.query.type || 'all';
+    const monthParam = req.query.month;
+
+    // Single-month mode (for serverless safety)
+    if (monthParam != null) {
+      const fyIndex = parseInt(monthParam);
+      if (isNaN(fyIndex) || fyIndex < 0 || fyIndex > 11) {
+        return res.json({ success: false, error: 'month must be 0-11' });
+      }
+      const { syncVismaFinancialsMonth, syncServiceRevenueMonth, syncBlikkKpisMonth } = require('../services/ekonomi-sync');
+
+      let result;
+      if (type === 'pl') result = await syncVismaFinancialsMonth(year, fyIndex);
+      else if (type === 'kpi') result = await syncBlikkKpisMonth(year, fyIndex);
+      else if (type === 'service_revenue') result = await syncServiceRevenueMonth(year, fyIndex);
+      else return res.json({ success: false, error: 'Specify type when using month param' });
+
+      return res.json({ success: true, year, type, fyIndex, ...result });
+    }
+
+    // Full-year mode (original)
     const { syncVismaFinancials, syncBlikkKpis, syncServiceRevenue, syncAll } = require('../services/ekonomi-sync');
 
     let result;
