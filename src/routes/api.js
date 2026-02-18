@@ -1134,6 +1134,56 @@ router.get('/debug/visma-recurring', async (req, res) => {
   }
 });
 
+// ── Ekonomi KPI manual edit ──────────────────────────────────
+
+// Save KPI data for a specific fiscal year month
+router.patch('/ekonomi/kpi', async (req, res) => {
+  try {
+    const { year, fyIndex, rapporterade_h, interntid_h, franvaro_h, debiterade_h } = req.body;
+    if (!year || fyIndex == null) return res.json({ success: false, error: 'year and fyIndex required' });
+
+    // Calculate fiscal month start
+    const calMonth = (9 + fyIndex) % 12;
+    const calYear = fyIndex < 3 ? year - 1 : year;
+    const month = new Date(Date.UTC(calYear, calMonth, 1));
+
+    // Compute derived fields
+    const tillganglig = (rapporterade_h || 0) - (franvaro_h || 0);
+    const debiteringsgrad = tillganglig > 0 ? Math.round(((debiterade_h || 0) / tillganglig) * 1000) / 10 : 0;
+
+    // Compute intakt_per_h from P&L snapshot
+    let intakt_per_h = 0;
+    try {
+      const plSnap = await prisma.financialSnapshot.findUnique({
+        where: { month_type: { month, type: 'pl' } },
+      });
+      if (plSnap && debiterade_h > 0) {
+        const pl = JSON.parse(plSnap.data);
+        intakt_per_h = Math.round(pl.intakter / debiterade_h);
+      }
+    } catch { /* no PL data */ }
+
+    const data = JSON.stringify({
+      rapporterade_h: rapporterade_h || 0,
+      interntid_h: interntid_h || 0,
+      franvaro_h: franvaro_h || 0,
+      debiterade_h: debiterade_h || 0,
+      debiteringsgrad,
+      intakt_per_h,
+    });
+
+    await prisma.financialSnapshot.upsert({
+      where: { month_type: { month, type: 'kpi' } },
+      update: { data, syncedAt: new Date() },
+      create: { month, type: 'kpi', data, syncedAt: new Date() },
+    });
+
+    res.json({ success: true, debiteringsgrad, intakt_per_h });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+});
+
 // ── Ekonomi sync & debug ─────────────────────────────────────
 
 // Trigger ekonomi sync — supports step-by-step: ?type=pl|kpi|service_revenue or all
@@ -1155,19 +1205,225 @@ router.post('/sync/ekonomi', async (req, res) => {
   }
 });
 
-// Debug: inspect Blikk time report structure
+// Debug: inspect Blikk time report structure — tries multiple endpoints
 router.get('/debug/blikk-timereports', async (req, res) => {
   try {
     const { BlikkClient } = require('../services/blikk-client');
     const client = new BlikkClient();
-    const data = await client.get('/v1/Core/TimeReports', { page: 1, pageSize: 5 });
-    const items = data.items || data.data || data;
-    const first = Array.isArray(items) ? items[0] : items;
-    res.json({
-      totalItemCount: data.totalItemCount,
-      fields: first ? Object.keys(first) : [],
-      sample: Array.isArray(items) ? items.slice(0, 3) : items,
+    const results = {};
+    const paths = [
+      '/v1/Core/Tasks',
+      '/v1/Core/Assignments',
+    ];
+    // Also check if projects contain time data
+    try {
+      const projData = await client.get('/v1/Core/Projects', { page: 1, pageSize: 1 });
+      const projItem = (projData.items || [])[0];
+      if (projItem) {
+        const detail = await client.get(`/v1/Core/Projects/${projItem.id}`);
+        const timeFields = Object.entries(detail).filter(([k, v]) =>
+          /time|hour|h$|registr|debit|bill|arbets/i.test(k)
+        );
+        results['project_time_fields'] = {
+          allFields: Object.keys(detail),
+          timeRelated: timeFields.length > 0 ? Object.fromEntries(timeFields) : 'none found',
+        };
+      }
+    } catch (e) { results['project_time_fields'] = { error: e.message.slice(0, 200) }; }
+    for (const path of paths) {
+      try {
+        const data = await client.get(path, { page: 1, pageSize: 3 });
+        const items = data.items || data.data || data;
+        const first = Array.isArray(items) ? items[0] : null;
+        results[path] = {
+          status: 'OK',
+          totalItemCount: data.totalItemCount,
+          fields: first ? Object.keys(first) : [],
+          sample: first,
+        };
+      } catch (e) {
+        results[path] = { status: e.message.includes('403') ? '403' : e.message.includes('404') ? '404' : 'ERR', msg: e.message.slice(0, 200) };
+      }
+    }
+    res.json(results);
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// Debug: compare Visma balances across dates with FULL pagination
+router.get('/debug/visma-balance-compare', async (req, res) => {
+  try {
+    const year = parseInt(req.query.year) || 2025;
+    const { SpirisClient } = require('../services/spiris-client');
+    const client = new SpirisClient();
+
+    // Fetch ALL pages for a date
+    async function fetchAll(date) {
+      const all = [];
+      let page = 1;
+      while (true) {
+        const data = await client.get(`/accountbalances/${date}`, { $page: page, $pagesize: 500 });
+        const items = data.Data || data.data || data;
+        const arr = Array.isArray(items) ? items : [];
+        all.push(...arr);
+        if (arr.length < 500) break;
+        page++;
+      }
+      return all;
+    }
+
+    // Only 3 dates to keep it fast: dec prev, jan, dec
+    const dates = [
+      `${year - 1}-12-31`,
+      `${year}-01-31`,
+      `${year}-12-31`,
+    ];
+
+    const results = {};
+
+    for (const date of dates) {
+      const arr = await fetchAll(date);
+
+      const sum = (from, to) => arr
+        .filter(a => (a.AccountNumber || 0) >= from && (a.AccountNumber || 0) < to)
+        .reduce((s, a) => s + (a.Balance || 0), 0);
+
+      const sample3xxx = arr
+        .filter(a => (a.AccountNumber || 0) >= 3000 && (a.AccountNumber || 0) < 4000)
+        .slice(0, 5)
+        .map(a => ({ acct: a.AccountNumber, bal: a.Balance }));
+
+      results[date] = {
+        totalAccounts: arr.length,
+        intakter_3xxx: Math.round(sum(3000, 4000)),
+        ravaror_4xxx: Math.round(sum(4000, 5000)),
+        ovriga_5_6xxx: Math.round(sum(5000, 7000)),
+        personal_7xxx: Math.round(sum(7000, 7800)),
+        kassa_19xx: Math.round(sum(1900, 2000)),
+        sample3xxx,
+      };
+    }
+
+    res.json({ year, dates, results });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// Cleanup: delete financial snapshots (optionally scoped to a fiscal year)
+router.post('/sync/ekonomi/cleanup', async (req, res) => {
+  const year = parseInt(req.query.year);
+  let deleted;
+  if (year) {
+    // FY year=2025 → Oct 2024 – Sep 2025
+    const fyStart = new Date(Date.UTC(year - 1, 9, 1));
+    const fyEnd = new Date(Date.UTC(year, 9, 1));
+    deleted = await prisma.financialSnapshot.deleteMany({
+      where: { month: { gte: fyStart, lt: fyEnd } },
     });
+  } else {
+    deleted = await prisma.financialSnapshot.deleteMany({});
+  }
+  res.json({ success: true, deleted: deleted.count });
+});
+
+// Debug: show raw DB data for a specific month's P&L snapshot
+router.get('/debug/pl-snapshot', async (req, res) => {
+  const year = parseInt(req.query.year) || 2025;
+  const month = parseInt(req.query.month) || 9; // 0-indexed, 9=October
+
+  const monthDate = new Date(year, month, 1);
+
+  // Find all matching snapshots (check for duplicates)
+  const all = await prisma.financialSnapshot.findMany({
+    where: { type: 'pl' },
+    orderBy: { month: 'asc' },
+  });
+
+  const oct = all.filter(s => {
+    const d = new Date(s.month);
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+
+  res.json({
+    query: { year, month, monthDate: monthDate.toISOString() },
+    totalPlSnapshots: all.length,
+    matchingOctober: oct.length,
+    snapshots: oct.map(s => ({
+      id: s.id,
+      month: s.month,
+      monthISO: new Date(s.month).toISOString(),
+      monthLocal: new Date(s.month).toString(),
+      data: JSON.parse(s.data),
+      syncedAt: s.syncedAt,
+    })),
+    allMonths: all.filter(s => s.type === 'pl').map(s => ({
+      month: new Date(s.month).toISOString().slice(0, 7),
+      intakter: JSON.parse(s.data).intakter,
+    })),
+  });
+});
+
+// Debug: probe Visma API for closing-entry exclusion parameters
+router.get('/debug/visma-closing-test', async (req, res) => {
+  try {
+    const { SpirisClient } = require('../services/spiris-client');
+    const client = new SpirisClient();
+    const results = {};
+
+    // Baseline: Oct 31, 2025 (the distorted month) — page 2 to get 3xxx accounts
+    try {
+      const data = await client.get('/accountbalances/2025-10-31', { $page: 2, $pagesize: 500 });
+      const items = data.Data || data.data || data;
+      const arr = Array.isArray(items) ? items : [];
+      const sum3 = arr.filter(a => (a.AccountNumber || 0) >= 3000 && (a.AccountNumber || 0) < 4000)
+        .reduce((s, a) => s + (a.Balance || 0), 0);
+      results['baseline_oct_page2'] = { count: arr.length, intakter_3xxx: Math.round(sum3) };
+    } catch (e) { results['baseline_oct_page2'] = { error: e.message.slice(0, 200) }; }
+
+    // Try common parameters to exclude closing entries
+    const tests = [
+      { label: 'useIncomingBalance_false', params: { $page: 2, $pagesize: 500, useIncomingBalance: false } },
+      { label: 'excludeYearEndVoucher', params: { $page: 2, $pagesize: 500, excludeYearEndVoucher: true } },
+      { label: 'includeYearEndVoucher_false', params: { $page: 2, $pagesize: 500, includeYearEndVoucher: false } },
+      { label: 'financialYear_2025', params: { $page: 2, $pagesize: 500, financialYear: 2025 } },
+      { label: 'filter_no_closing', params: { $page: 2, $pagesize: 500, $filter: "VoucherType ne 'YearEnd'" } },
+    ];
+
+    for (const test of tests) {
+      try {
+        const data = await client.get('/accountbalances/2025-10-31', test.params);
+        const items = data.Data || data.data || data;
+        const arr = Array.isArray(items) ? items : [];
+        const sum3 = arr.filter(a => (a.AccountNumber || 0) >= 3000 && (a.AccountNumber || 0) < 4000)
+          .reduce((s, a) => s + (a.Balance || 0), 0);
+        results[test.label] = { count: arr.length, intakter_3xxx: Math.round(sum3), changed: Math.round(sum3) !== results['baseline_oct_page2']?.intakter_3xxx };
+      } catch (e) { results[test.label] = { error: e.message.slice(0, 200) }; }
+    }
+
+    // Also try alternative endpoints
+    const altPaths = [
+      '/reports/profitandloss',
+      '/financialstatements',
+      '/accountresults',
+      '/periodbalances',
+      '/accountbalancelines',
+    ];
+
+    for (const path of altPaths) {
+      try {
+        const data = await client.get(path, { $pagesize: 3 });
+        const items = data.Data || data.data || data;
+        results[path] = {
+          status: 'OK',
+          fields: Array.isArray(items) && items[0] ? Object.keys(items[0]) : Object.keys(data),
+          sample: Array.isArray(items) ? items.slice(0, 1) : undefined,
+        };
+      } catch (e) { results[path] = { status: e.message.includes('404') ? '404' : 'ERROR', error: e.message.slice(0, 200) }; }
+    }
+
+    res.json(results);
   } catch (error) {
     res.json({ error: error.message });
   }
@@ -1227,6 +1483,227 @@ router.get('/debug/visma-accountbalances', async (req, res) => {
     } catch (e) { results['response_keys'] = { error: e.message.slice(0, 100) }; }
 
     res.json(results);
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// Debug: test Visma journal/voucher endpoints for accurate monthly P&L
+router.get('/debug/visma-journal-test', async (req, res) => {
+  try {
+    const { SpirisClient } = require('../services/spiris-client');
+    const client = new SpirisClient();
+    const results = {};
+
+    // 1. Fiscal years
+    const fyPaths = ['/fiscalyears', '/v2/fiscalyears', '/companySettings'];
+    for (const path of fyPaths) {
+      try {
+        const data = await client.get(path, { $pagesize: 5 });
+        results[path] = { status: 'OK', data: data.Data || data.data || data };
+      } catch (e) { results[path] = { status: e.message.includes('404') ? '404' : 'ERR', msg: e.message.slice(0, 150) }; }
+    }
+
+    // 2. Journal/voucher endpoints
+    const journalPaths = [
+      '/vouchers', '/voucherrows', '/journalentries',
+      '/generalledger', '/accountledger',
+      '/accounttransactions', '/transactions',
+    ];
+    for (const path of journalPaths) {
+      try {
+        const data = await client.get(path, { $pagesize: 3 });
+        const items = data.Data || data.data || data;
+        const first = Array.isArray(items) ? items[0] : null;
+        results[path] = {
+          status: 'OK',
+          count: data.Meta?.TotalCount || data.TotalCount || (Array.isArray(items) ? items.length : '?'),
+          fields: first ? Object.keys(first) : Object.keys(data),
+          sample: first,
+        };
+      } catch (e) { results[path] = { status: e.message.includes('404') ? '404' : 'ERR', msg: e.message.slice(0, 150) }; }
+    }
+
+    res.json(results);
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// Debug: detailed monthly comparison — shows account breakdown per FY month
+router.get('/debug/ekonomi-compare', async (req, res) => {
+  try {
+    const year = parseInt(req.query.year) || 2025;
+    const monthIdx = req.query.month != null ? parseInt(req.query.month) : 0; // FY index 0=Oct
+    const { SpirisClient } = require('../services/spiris-client');
+    const client = new SpirisClient();
+
+    // FY calendar mapping
+    const calMonth = (9 + monthIdx) % 12;
+    const calYear = monthIdx < 3 ? year - 1 : year;
+
+    // Current month last day
+    const currDate = new Date(calYear, calMonth + 1, 0).toISOString().slice(0, 10);
+    // Previous month last day (baseline)
+    const prevCalMonth = calMonth === 0 ? 11 : calMonth - 1;
+    const prevCalYear = calMonth === 0 ? calYear - 1 : calYear;
+    const prevDate = new Date(prevCalYear, prevCalMonth + 1, 0).toISOString().slice(0, 10);
+
+    async function fetchAll(date) {
+      const all = [];
+      let page = 1;
+      while (true) {
+        const data = await client.get(`/accountbalances/${date}`, { $page: page, $pagesize: 500 });
+        const items = data.Data || data.data || data;
+        const arr = Array.isArray(items) ? items : [];
+        all.push(...arr);
+        if (arr.length < 500) break;
+        page++;
+      }
+      return all;
+    }
+
+    const [curr, prev] = await Promise.all([fetchAll(currDate), fetchAll(prevDate)]);
+
+    function sumRange(items, from, to) {
+      return items.filter(a => (a.AccountNumber || 0) >= from && (a.AccountNumber || 0) < to)
+        .reduce((s, a) => s + (a.Balance || 0), 0);
+    }
+
+    function diffRange(from, to) {
+      return Math.round(sumRange(curr, from, to) - sumRange(prev, from, to));
+    }
+
+    // Account group breakdown
+    const groups = {
+      '3000-3099': diffRange(3000, 3100),
+      '3100-3199': diffRange(3100, 3200),
+      '3200-3299': diffRange(3200, 3300),
+      '3300-3399': diffRange(3300, 3400),
+      '3400-3499': diffRange(3400, 3500),
+      '3500-3599': diffRange(3500, 3600),
+      '3600-3699': diffRange(3600, 3700),
+      '3700-3799': diffRange(3700, 3800),
+      '3800-3899': diffRange(3800, 3900),
+      '3900-3999': diffRange(3900, 4000),
+      'TOTAL_3xxx': diffRange(3000, 4000),
+      '4xxx': diffRange(4000, 5000),
+      '5xxx': diffRange(5000, 6000),
+      '6xxx': diffRange(6000, 7000),
+      '7000-7699': diffRange(7000, 7700),
+      '7700-7799': diffRange(7700, 7800),
+      '7800-7899': diffRange(7800, 7900),
+      '7900-7999': diffRange(7900, 8000),
+      '8000-8399': diffRange(8000, 8400),
+      '8400-8799': diffRange(8400, 8800),
+      '8800-8899': diffRange(8800, 8900),
+      '8900-8999': diffRange(8900, 9000),
+    };
+
+    // Also show accounts with big changes
+    const bigChanges = [];
+    for (const c of curr) {
+      const acct = c.AccountNumber || 0;
+      if (acct < 3000 || acct >= 9000) continue;
+      const p = prev.find(a => a.AccountNumber === acct);
+      const diff = (c.Balance || 0) - (p?.Balance || 0);
+      if (Math.abs(diff) > 10000) {
+        bigChanges.push({ acct, diff: Math.round(diff), currBal: Math.round(c.Balance || 0), prevBal: Math.round(p?.Balance || 0) });
+      }
+    }
+    bigChanges.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+
+    const monthNames = ['okt','nov','dec','jan','feb','mar','apr','maj','jun','jul','aug','sep'];
+
+    res.json({
+      fyMonth: `${monthNames[monthIdx]} (FY ${year}, index ${monthIdx})`,
+      dates: { curr: currDate, prev: prevDate },
+      accountCounts: { curr: curr.length, prev: prev.length },
+      groups,
+      intakter_computed: Math.round(-1 * diffRange(3000, 4000)),
+      bigChanges: bigChanges.slice(0, 20),
+    });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// Debug: test voucher-based P&L for a single month
+router.get('/debug/voucher-pl', async (req, res) => {
+  try {
+    const calYear = parseInt(req.query.year) || 2025;
+    const calMonth = parseInt(req.query.month) || 3; // 1-12 (calendar month)
+    const { SpirisClient } = require('../services/spiris-client');
+    const client = new SpirisClient();
+
+    const fromDate = `${calYear}-${String(calMonth).padStart(2, '0')}-01`;
+    const lastDay = new Date(calYear, calMonth, 0).getDate();
+    const toDate = `${calYear}-${String(calMonth).padStart(2, '0')}-${lastDay}`;
+
+    // Fetch all vouchers in the date range (paginated)
+    const vouchers = [];
+    let page = 1;
+    while (true) {
+      const data = await client.get('/vouchers', {
+        $filter: `VoucherDate ge ${fromDate} and VoucherDate le ${toDate}`,
+        $pagesize: 200,
+        $page: page,
+      });
+      const items = data.Data || data.data || data;
+      const arr = Array.isArray(items) ? items : [];
+      vouchers.push(...arr);
+      if (arr.length < 200) break;
+      page++;
+    }
+
+    // Sum rows by account
+    const acctSums = {};
+    for (const v of vouchers) {
+      for (const row of (v.Rows || [])) {
+        const a = row.AccountNumber;
+        if (!acctSums[a]) acctSums[a] = { debit: 0, credit: 0 };
+        acctSums[a].debit += row.DebitAmount || 0;
+        acctSums[a].credit += row.CreditAmount || 0;
+      }
+    }
+
+    function sumGroup(from, to) {
+      let d = 0, c = 0;
+      for (const [a, s] of Object.entries(acctSums)) {
+        const n = parseInt(a);
+        if (n >= from && n < to) { d += s.debit; c += s.credit; }
+      }
+      return { debit: Math.round(d), credit: Math.round(c), net: Math.round(c - d) };
+    }
+
+    const g = {
+      '3xxx': sumGroup(3000, 4000),
+      '4xxx': sumGroup(4000, 5000),
+      '5-6xxx': sumGroup(5000, 7000),
+      '7000-7899': sumGroup(7000, 7900),
+      '7900-7999': sumGroup(7900, 8000),
+      '8000-8799': sumGroup(8000, 8800),
+      '8800-8899': sumGroup(8800, 8900),
+      '8900-8998 (skatt)': sumGroup(8900, 8999),
+      '8999 (årets resultat)': sumGroup(8999, 9000),
+    };
+
+    res.json({
+      period: `${fromDate} — ${toDate}`,
+      voucherCount: vouchers.length,
+      pages: page,
+      groups: g,
+      pl: {
+        intakter: g['3xxx'].net,
+        ravaror: -g['4xxx'].net,
+        ovriga_externa: -g['5-6xxx'].net,
+        personalkostnader: -g['7000-7899'].net,
+        ovriga_rorelse: -g['7900-7999'].net,
+        finansiella: g['8000-8799'].net,
+        bokslutsdispositioner: -g['8800-8899'].net,
+        skatt: -g['8900-8999'].net,
+      },
+    });
   } catch (error) {
     res.json({ error: error.message });
   }

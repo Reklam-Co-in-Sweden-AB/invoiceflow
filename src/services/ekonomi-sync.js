@@ -6,101 +6,142 @@ const prisma = new PrismaClient();
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function lastDayOfMonth(year, month) {
-  // month is 0-indexed
-  return new Date(year, month + 1, 0).toISOString().slice(0, 10);
+function monthStartUTC(year, month) {
+  return new Date(Date.UTC(year, month, 1));
 }
 
-function monthStart(year, month) {
-  return new Date(year, month, 1);
+/** Build "YYYY-MM-DD" for the last day of a month (timezone-safe). */
+function lastDayStr(year, month) {
+  const d = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const mm = String(month + 1).padStart(2, '0');
+  return `${year}-${mm}-${String(d).padStart(2, '0')}`;
 }
 
-// ── 1. Visma P&L ────────────────────────────────────────────
+/** Build "YYYY-MM-01" for the first day of a month. */
+function firstDayStr(year, month) {
+  const mm = String(month + 1).padStart(2, '0');
+  return `${year}-${mm}-01`;
+}
 
 /**
- * Sync P&L data from Visma account balances for all months in a year.
- * Fetches 13 balance snapshots (dec prev year + jan-dec) and diffs them.
+ * Fiscal year runs Oct–Sep. year=2025 means Oct 2024 – Sep 2025.
+ * fyIndex: 0=Oct, 1=Nov, 2=Dec, 3=Jan, 4=Feb, ..., 11=Sep
+ */
+function fyCalendar(year, fyIndex) {
+  const calMonth = (9 + fyIndex) % 12;
+  const calYear = fyIndex < 3 ? year - 1 : year;
+  return { calYear, calMonth };
+}
+
+function fyMonthStart(year, fyIndex) {
+  const { calYear, calMonth } = fyCalendar(year, fyIndex);
+  return monthStartUTC(calYear, calMonth);
+}
+
+// ── 1. Visma P&L (voucher-based) ────────────────────────────
+
+/**
+ * Fetch all Visma vouchers for a date range (paginated).
+ */
+async function fetchVouchers(client, fromDate, toDate) {
+  const vouchers = [];
+  let page = 1;
+  while (true) {
+    const data = await client.get('/vouchers', {
+      $filter: `VoucherDate ge ${fromDate} and VoucherDate le ${toDate}`,
+      $pagesize: 200,
+      $page: page,
+    });
+    const items = data.Data || data.data || data;
+    const arr = Array.isArray(items) ? items : [];
+    vouchers.push(...arr);
+    if (arr.length < 200) break;
+    page++;
+  }
+  return vouchers;
+}
+
+/**
+ * Fetch cumulative account balance for 19xx (kassa & bank) at a date.
+ */
+async function fetchKassaBank(client, date) {
+  const all = [];
+  let page = 1;
+  while (true) {
+    const data = await client.get(`/accountbalances/${date}`, { $page: page, $pagesize: 500 });
+    const items = data.Data || data.data || data;
+    const arr = Array.isArray(items) ? items : [];
+    all.push(...arr);
+    if (arr.length < 500) break;
+    page++;
+  }
+  return all
+    .filter(a => (a.AccountNumber || 0) >= 1900 && (a.AccountNumber || 0) < 2000)
+    .reduce((s, a) => s + (a.Balance || 0), 0);
+}
+
+/**
+ * Sync P&L data from Visma vouchers for a fiscal year (Oct–Sep).
+ * Uses the /vouchers endpoint to get exact per-month figures.
  */
 async function syncVismaFinancials(year) {
   const client = new SpirisClient();
-
-  // Fetch 13 dates: last day of dec prev year + last day of each month
-  const dates = [];
-  dates.push(lastDayOfMonth(year - 1, 11)); // dec previous year
-  for (let m = 0; m < 12; m++) {
-    dates.push(lastDayOfMonth(year, m));
-  }
-
-  // Fetch all accounts for a date (paginated, ~1300 accounts)
-  async function fetchAllBalances(date) {
-    const all = [];
-    let page = 1;
-    const pageSize = 500;
-    while (true) {
-      const data = await client.get(`/accountbalances/${date}`, { $page: page, $pagesize: pageSize });
-      const items = data.Data || data.data || data;
-      const arr = Array.isArray(items) ? items : [];
-      all.push(...arr);
-      if (arr.length < pageSize) break;
-      page++;
-    }
-    return all;
-  }
-
-  const balances = [];
-  for (const date of dates) {
-    balances.push(await fetchAllBalances(date));
-  }
-
-  // Helper: sum account balances matching a predicate
-  function sumAccounts(items, predicate) {
-    return items
-      .filter(a => predicate(a.AccountNumber || a.accountNumber || 0))
-      .reduce((s, a) => s + (a.Balance || a.balance || 0), 0);
-  }
-
   const saved = [];
 
-  for (let m = 0; m < 12; m++) {
-    const curr = balances[m + 1]; // this month's cumulative
-    const prev = balances[m];     // previous month's cumulative
+  for (let i = 0; i < 12; i++) {
+    const { calYear, calMonth } = fyCalendar(year, i);
+    const fromDate = firstDayStr(calYear, calMonth);
+    const toDate = lastDayStr(calYear, calMonth);
 
-    // BAS account groupings — cumulative to monthly diff
-    const intakter_cum  = sumAccounts(curr, n => n >= 3000 && n < 4000);
-    const intakter_prev = sumAccounts(prev, n => n >= 3000 && n < 4000);
-    const intakter = -1 * (intakter_cum - intakter_prev); // credit accounts → positive
+    // Fetch all vouchers for the month
+    const vouchers = await fetchVouchers(client, fromDate, toDate);
 
-    const ravaror_cum  = sumAccounts(curr, n => n >= 4000 && n < 5000);
-    const ravaror_prev = sumAccounts(prev, n => n >= 4000 && n < 5000);
-    const ravaror = ravaror_cum - ravaror_prev;
+    // Sum all voucher rows by account number
+    const acctSums = {};
+    for (const v of vouchers) {
+      for (const row of (v.Rows || [])) {
+        const a = row.AccountNumber;
+        if (!acctSums[a]) acctSums[a] = { debit: 0, credit: 0 };
+        acctSums[a].debit += row.DebitAmount || 0;
+        acctSums[a].credit += row.CreditAmount || 0;
+      }
+    }
 
-    const ovriga_cum  = sumAccounts(curr, n => n >= 5000 && n < 7000);
-    const ovriga_prev = sumAccounts(prev, n => n >= 5000 && n < 7000);
-    const ovriga_kostnader = ovriga_cum - ovriga_prev;
+    // Net = credit - debit (positive for credit-surplus accounts like revenue)
+    function netGroup(from, to) {
+      let d = 0, c = 0;
+      for (const [a, s] of Object.entries(acctSums)) {
+        const n = parseInt(a);
+        if (n >= from && n < to) { d += s.debit; c += s.credit; }
+      }
+      return c - d;
+    }
 
-    const personal_cum  = sumAccounts(curr, n => n >= 7000 && n < 7800);
-    const personal_prev = sumAccounts(prev, n => n >= 7000 && n < 7800);
-    const personalkostnad = personal_cum - personal_prev;
+    const intakter = netGroup(3000, 4000);                    // positive = revenue
+    const ravaror = -netGroup(4000, 5000);                    // positive = cost
+    const ovriga_kostnader = -netGroup(5000, 7000);           // positive = cost
+    const personalkostnad = -netGroup(7000, 7900);            // positive = cost
+    const ovriga_rorelsekostnader = -netGroup(7900, 8000);    // positive = cost
+    const finansiella = netGroup(8000, 8800);                 // positive = income
+    const skatt = -netGroup(8900, 8999);                      // positive = tax expense (excludes 8999 Årets resultat)
 
-    const avskr_cum  = sumAccounts(curr, n => n >= 7800 && n < 7900);
-    const avskr_prev = sumAccounts(prev, n => n >= 7800 && n < 7900);
-    const avskrivningar = avskr_cum - avskr_prev;
+    // Kassa & bank: cumulative balance at month end
+    let kassa_bank = 0;
+    try {
+      kassa_bank = await fetchKassaBank(client, toDate);
+    } catch (e) {
+      console.error(`Kassa/bank for ${toDate}: ${e.message}`);
+    }
 
-    const finans_cum  = sumAccounts(curr, n => n >= 8000 && n < 9000);
-    const finans_prev = sumAccounts(prev, n => n >= 8000 && n < 9000);
-    const finansiella = finans_cum - finans_prev;
-
-    // Kassa & bank — absolute balance, not diff
-    const kassa_bank = sumAccounts(curr, n => n >= 1900 && n < 2000);
-
-    const month = monthStart(year, m);
+    const month = fyMonthStart(year, i);
     const data = JSON.stringify({
       intakter: Math.round(intakter),
       ravaror: Math.round(ravaror),
       ovriga_kostnader: Math.round(ovriga_kostnader),
       personalkostnad: Math.round(personalkostnad),
-      avskrivningar: Math.round(avskrivningar),
+      ovriga_rorelsekostnader: Math.round(ovriga_rorelsekostnader),
       finansiella: Math.round(finansiella),
+      skatt: Math.round(skatt),
       kassa_bank: Math.round(kassa_bank),
     });
 
@@ -110,7 +151,7 @@ async function syncVismaFinancials(year) {
       create: { month, type: 'pl', data, syncedAt: new Date() },
     });
 
-    saved.push({ month: month.toISOString().slice(0, 7) });
+    saved.push({ month: month.toISOString().slice(0, 7), vouchers: vouchers.length });
   }
 
   return { type: 'pl', months: saved.length };
@@ -119,16 +160,16 @@ async function syncVismaFinancials(year) {
 // ── 2. Blikk KPIs ───────────────────────────────────────────
 
 /**
- * Sync time-report KPIs from Blikk for all months in a year.
+ * Sync time-report KPIs from Blikk for a fiscal year (Oct–Sep).
  */
 async function syncBlikkKpis(year) {
   const client = new BlikkClient();
-
   const saved = [];
 
-  for (let m = 0; m < 12; m++) {
-    const fromDate = `${year}-${String(m + 1).padStart(2, '0')}-01`;
-    const toDate = lastDayOfMonth(year, m);
+  for (let i = 0; i < 12; i++) {
+    const { calYear, calMonth } = fyCalendar(year, i);
+    const fromDate = firstDayStr(calYear, calMonth);
+    const toDate = lastDayStr(calYear, calMonth);
 
     let reports;
     try {
@@ -138,7 +179,6 @@ async function syncBlikkKpis(year) {
       continue;
     }
 
-    // Aggregate hours — field names are guesses, debug endpoint will confirm
     let rapporterade_h = 0;
     let interntid_h = 0;
     let franvaro_h = 0;
@@ -148,22 +188,16 @@ async function syncBlikkKpis(year) {
       const hours = r.hours || r.quantity || r.time || 0;
       rapporterade_h += hours;
 
-      // Categorize based on common Blikk field patterns
       const isInternal = r.isInternal || r.internal || r.projectType === 'Internal' || false;
       const isAbsence = r.isAbsence || r.absence || r.type === 'Absence' || false;
       const isBillable = r.isBillable || r.billable || r.invoiceable || false;
 
-      if (isAbsence) {
-        franvaro_h += hours;
-      } else if (isInternal) {
-        interntid_h += hours;
-      } else if (isBillable) {
-        debiterade_h += hours;
-      }
+      if (isAbsence) franvaro_h += hours;
+      else if (isInternal) interntid_h += hours;
+      else if (isBillable) debiterade_h += hours;
     }
 
-    // Try to calculate debiteringsgrad and intäkt/h from P&L snapshot
-    const month = monthStart(year, m);
+    const month = fyMonthStart(year, i);
     const tillganglig = rapporterade_h - franvaro_h;
     const debiteringsgrad = tillganglig > 0 ? Math.round((debiterade_h / tillganglig) * 1000) / 10 : 0;
 
@@ -199,94 +233,53 @@ async function syncBlikkKpis(year) {
   return { type: 'kpi', months: saved.length };
 }
 
-// ── 3. Service Revenue ───────────────────────────────────────
+// ── 3. Service Revenue (from Visma accounts) ────────────────
 
-const INTERVAL_MULTIPLIER = { monthly: 1, quarterly: 3, semi_annual: 6, annual: 12 };
-
-const CATEGORY_MAP = {
-  'Din Marknadskoordinator': 'dima',
-  'Supportavtal': 'supportavtal',
-  'Webbhotell & domän': 'webbhotell',
+// Visma account → category mapping
+const SERVICE_ACCOUNTS = {
+  3041: 'tjanster',       // Försäljn tjänst 25% sv
+  3045: 'tjanster',       // Försäljn tjänst utanför EG momsfri
+  3051: 'varor',          // Försäljn varor 25% sv
+  3055: 'varor',          // Försäljn varor utanför EG momsfri
+  3111: 'dima',           // Försäljning Din markandskoordinator 25%
+  3112: 'supportavtal',   // Webbhotell och Supportavtal 25%
+  3113: 'hemsidor',       // Försäljning Hemsidor 25%
+  3114: 'layout',         // Försäljning Layout, Foto, Film 25%
 };
 
 /**
- * Check if a project is due for invoicing in a given month.
- */
-function isDueForMonth(project, ms) {
-  if (!project.nextInvoiceMonth) return true;
-  const next = new Date(project.nextInvoiceMonth);
-  const nextY = next.getFullYear(), nextM = next.getMonth();
-  const viewY = ms.getFullYear(), viewM = ms.getMonth();
-  if (viewY < nextY || (viewY === nextY && viewM < nextM)) return false;
-  const intMonths = INTERVAL_MULTIPLIER[project.billingInterval] || 1;
-  const diff = (viewY - nextY) * 12 + (viewM - nextM);
-  return diff % intMonths === 0;
-}
-
-/**
- * Calculate effective price for a project in a given month.
- */
-function effectivePrice(p, ms) {
-  // Check for override
-  const override = (p.priceOverrides || []).find(o => {
-    const d = new Date(o.month);
-    return d.getFullYear() === ms.getFullYear() && d.getMonth() === ms.getMonth();
-  });
-  if (override) return override.price;
-
-  if (p.billingSplits && p.billingSplits.length > 0) {
-    return p.billingSplits.reduce((s, sp) => s + sp.amount, 0);
-  }
-  if (p.invoiceRows && p.invoiceRows.length > 0) {
-    return p.invoiceRows.reduce((s, r) => s + (r.unitPrice || 0) * (r.quantity || 1), 0);
-  }
-  const multiplier = INTERVAL_MULTIPLIER[p.billingInterval] || 1;
-  return (p.monthlyPrice || 0) * multiplier;
-}
-
-/**
- * Sync service revenue breakdown for all months in a year.
+ * Sync service revenue from Visma vouchers for a fiscal year (Oct–Sep).
+ * Uses accounts 3111/3112/3113 to break down revenue by service type.
  */
 async function syncServiceRevenue(year) {
-  const projects = await prisma.project.findMany({
-    where: { isCompleted: false },
-    include: {
-      priceOverrides: true,
-      invoiceRows: true,
-      billingSplits: true,
-    },
-  });
-
+  const client = new SpirisClient();
   const saved = [];
 
-  for (let m = 0; m < 12; m++) {
-    const ms = monthStart(year, m);
-    const totals = { dima: 0, supportavtal: 0, webbhotell: 0 };
+  for (let i = 0; i < 12; i++) {
+    const { calYear, calMonth } = fyCalendar(year, i);
+    const fromDate = firstDayStr(calYear, calMonth);
+    const toDate = lastDayStr(calYear, calMonth);
 
-    for (const p of projects) {
-      const key = CATEGORY_MAP[p.category];
-      if (!key) continue;
-      if (!isDueForMonth(p, ms)) continue;
+    const vouchers = await fetchVouchers(client, fromDate, toDate);
 
-      // Skip if project started after this month
-      if (p.startDate && new Date(p.startDate) > ms) continue;
-      // Skip if project ended before this month
-      if (p.endDate && new Date(p.endDate) < ms) continue;
-      // Skip if paused during this month
-      if (p.pauseFrom && p.pauseUntil) {
-        const from = new Date(p.pauseFrom);
-        const until = new Date(p.pauseUntil);
-        if (from <= ms && until >= ms) continue;
+    const totals = { tjanster: 0, varor: 0, dima: 0, supportavtal: 0, hemsidor: 0, layout: 0 };
+    for (const v of vouchers) {
+      for (const row of (v.Rows || [])) {
+        const cat = SERVICE_ACCOUNTS[row.AccountNumber];
+        if (cat) {
+          totals[cat] += (row.CreditAmount || 0) - (row.DebitAmount || 0);
+        }
       }
-
-      totals[key] += effectivePrice(p, ms);
     }
 
-    const month = ms;
+    const month = fyMonthStart(year, i);
     const data = JSON.stringify({
+      tjanster: Math.round(totals.tjanster),
+      varor: Math.round(totals.varor),
       dima: Math.round(totals.dima),
       supportavtal: Math.round(totals.supportavtal),
-      webbhotell: Math.round(totals.webbhotell),
+      hemsidor: Math.round(totals.hemsidor),
+      layout: Math.round(totals.layout),
     });
 
     await prisma.financialSnapshot.upsert({
@@ -295,7 +288,7 @@ async function syncServiceRevenue(year) {
       create: { month, type: 'service_revenue', data, syncedAt: new Date() },
     });
 
-    saved.push({ month: ms.toISOString().slice(0, 7) });
+    saved.push({ month: month.toISOString().slice(0, 7) });
   }
 
   return { type: 'service_revenue', months: saved.length };

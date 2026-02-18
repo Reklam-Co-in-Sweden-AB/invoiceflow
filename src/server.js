@@ -73,6 +73,15 @@ app.get('/api/cron/daily-sync', async (req, res) => {
     results.vismaArticles = await syncSpirisArticles();
   } catch (e) { results.vismaArticles = { error: e.message }; }
 
+  // Ekonomi sync: P&L + service revenue for current fiscal year
+  try {
+    const { syncVismaFinancials, syncServiceRevenue } = require('./services/ekonomi-sync');
+    const now = new Date();
+    const fyYear = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+    results.ekonomiPl = await syncVismaFinancials(fyYear);
+    results.ekonomiSr = await syncServiceRevenue(fyYear);
+  } catch (e) { results.ekonomi = { error: e.message }; }
+
   res.json({ success: true, timestamp: new Date().toISOString(), results });
 });
 

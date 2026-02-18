@@ -28,9 +28,9 @@
     <div class="flex items-center gap-4">
       <h1 class="text-xl font-bold text-gray-900">Ekonomi</h1>
       <div class="flex items-center gap-1 text-sm">
-        <a href="/ekonomi?year=<%= year - 1 %>" class="px-2 py-1 rounded hover:bg-gray-100 text-gray-500">&larr; <%= year - 1 %></a>
-        <span class="px-3 py-1 font-bold text-gray-900 bg-gray-100 rounded"><%= year %></span>
-        <a href="/ekonomi?year=<%= year + 1 %>" class="px-2 py-1 rounded hover:bg-gray-100 text-gray-500"><%= year + 1 %> &rarr;</a>
+        <a href="/ekonomi?year=<%= year - 1 %>" class="px-2 py-1 rounded hover:bg-gray-100 text-gray-500">&larr; <%= year - 2 %>/<%= String(year - 1).slice(2) %></a>
+        <span class="px-3 py-1 font-bold text-gray-900 bg-gray-100 rounded"><%= yearLabel %></span>
+        <a href="/ekonomi?year=<%= year + 1 %>" class="px-2 py-1 rounded hover:bg-gray-100 text-gray-500"><%= year %>/<%= String(year + 1).slice(2) %> &rarr;</a>
       </div>
     </div>
     <div class="flex items-center gap-3">
@@ -50,6 +50,10 @@
             { type: 'service_revenue', label: 'Tjänsteintäkter...' },
           ];
           (async () => {
+            syncStatus = 'Rensar gammal data...';
+            try {
+              await fetch('/api/sync/ekonomi/cleanup?year=' + year, { method: 'POST' });
+            } catch (e) { /* ignore cleanup errors */ }
             for (const step of steps) {
               syncStatus = step.label;
               try {
@@ -73,12 +77,12 @@
   <!-- Stat cards -->
   <div class="grid grid-cols-4 gap-4">
     <div class="card stat-card blue p-4">
-      <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Intakter YTD</div>
+      <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Intäkter YTD</div>
       <div class="text-2xl font-bold text-gray-900 mt-1 num"><%= tkr(intakterYtd) %> <span class="text-sm font-normal text-gray-400">tkr</span></div>
     </div>
     <div class="card stat-card green p-4">
-      <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">EBITDA YTD</div>
-      <div class="text-2xl font-bold mt-1 num <%= neg(ebitdaYtd) %>"><%= tkr(ebitdaYtd) %> <span class="text-sm font-normal text-gray-400">tkr</span></div>
+      <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Resultat YTD</div>
+      <div class="text-2xl font-bold mt-1 num <%= neg(resultatYtd) %>"><%= tkr(resultatYtd) %> <span class="text-sm font-normal text-gray-400">tkr</span></div>
     </div>
     <div class="card stat-card amber p-4">
       <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Debiteringsgrad</div>
@@ -99,7 +103,7 @@
       <table class="w-full text-right">
         <thead>
           <tr class="border-b border-gray-100">
-            <th class="text-left sticky left-0 bg-white z-10 min-w-[160px]">Post</th>
+            <th class="text-left sticky left-0 bg-white z-10 min-w-[180px]">Post</th>
             <% for (let i = 0; i < 12; i++) { %>
               <th class="min-w-[70px]"><%= monthNames[i] %></th>
             <% } %>
@@ -133,7 +137,7 @@
           </tr>
           <!-- Övriga kostnader -->
           <tr class="border-b border-gray-50 text-gray-600">
-            <td class="text-left sticky left-0 bg-white z-10">Övriga kostnader</td>
+            <td class="text-left sticky left-0 bg-white z-10">Övriga externa kostnader</td>
             <% for (let i = 0; i < 12; i++) { %>
               <td class="num <%= neg(plRows[i]?.ovriga_kostnader) %>"><%= plRows[i] ? tkr(plRows[i].ovriga_kostnader) : '–' %></td>
             <% } %>
@@ -148,7 +152,7 @@
           </tr>
           <!-- Personalkostnad -->
           <tr class="border-b border-gray-50 text-gray-600">
-            <td class="text-left sticky left-0 bg-white z-10">Personalkostnad</td>
+            <td class="text-left sticky left-0 bg-white z-10">Personalkostnader</td>
             <% for (let i = 0; i < 12; i++) { %>
               <td class="num <%= neg(plRows[i]?.personalkostnad) %>"><%= plRows[i] ? tkr(plRows[i].personalkostnad) : '–' %></td>
             <% } %>
@@ -161,37 +165,49 @@
             <% } %>
             <td class="num bg-gray-50"><%= pct(plTotal.personal_pct) %></td>
           </tr>
-          <!-- EBITDA -->
-          <tr class="border-b border-gray-200 font-semibold bg-green-50/30">
-            <td class="text-left sticky left-0 bg-green-50/30 z-10">EBITDA</td>
+          <!-- Övriga rörelsekostnader (only show if any month has data) -->
+          <% if (plRows.some(d => d && d.ovriga_rorelsekostnader)) { %>
+          <tr class="border-b border-gray-50 text-gray-600">
+            <td class="text-left sticky left-0 bg-white z-10">Övriga rörelsekostnader</td>
             <% for (let i = 0; i < 12; i++) { %>
-              <td class="num <%= neg(plRows[i]?.ebitda) %>"><%= plRows[i] ? tkr(plRows[i].ebitda) : '–' %></td>
+              <td class="num"><%= plRows[i] ? tkr(plRows[i].ovriga_rorelsekostnader || 0) : '–' %></td>
             <% } %>
-            <td class="num bg-gray-50 font-bold <%= neg(plTotal.ebitda) %>"><%= tkr(plTotal.ebitda) %></td>
+            <td class="num bg-gray-50"><%= tkr(plTotal.ovriga_rorelsekostnader) %></td>
+          </tr>
+          <% } %>
+          <!-- Rörelseresultat -->
+          <tr class="border-b border-gray-200 font-semibold bg-green-50/30">
+            <td class="text-left sticky left-0 bg-green-50/30 z-10">Rörelseresultat</td>
+            <% for (let i = 0; i < 12; i++) { %>
+              <td class="num <%= neg(plRows[i]?.rorelseresultat) %>"><%= plRows[i] ? tkr(plRows[i].rorelseresultat) : '–' %></td>
+            <% } %>
+            <td class="num bg-gray-50 font-bold <%= neg(plTotal.rorelseresultat) %>"><%= tkr(plTotal.rorelseresultat) %></td>
           </tr>
           <tr class="border-b border-gray-50 text-gray-400 text-[11px]">
             <td class="text-left sticky left-0 bg-white z-10 pl-6">% av intäkter</td>
             <% for (let i = 0; i < 12; i++) { %>
-              <td class="num"><%= plRows[i] ? pct(plRows[i].ebitda_pct) : '–' %></td>
+              <td class="num"><%= plRows[i] ? pct(plRows[i].rorelseresultat_pct) : '–' %></td>
             <% } %>
-            <td class="num bg-gray-50"><%= pct(plTotal.ebitda_pct) %></td>
+            <td class="num bg-gray-50"><%= pct(plTotal.rorelseresultat_pct) %></td>
           </tr>
-          <!-- Avskrivningar -->
+          <!-- Finansiella poster -->
           <tr class="border-b border-gray-50 text-gray-600">
-            <td class="text-left sticky left-0 bg-white z-10">Avskrivningar</td>
+            <td class="text-left sticky left-0 bg-white z-10">Finansiella poster</td>
             <% for (let i = 0; i < 12; i++) { %>
-              <td class="num <%= neg(plRows[i]?.avskrivningar) %>"><%= plRows[i] ? tkr(plRows[i].avskrivningar) : '–' %></td>
-            <% } %>
-            <td class="num bg-gray-50 <%= neg(plTotal.avskrivningar) %>"><%= tkr(plTotal.avskrivningar) %></td>
-          </tr>
-          <!-- Finansiella -->
-          <tr class="border-b border-gray-50 text-gray-600">
-            <td class="text-left sticky left-0 bg-white z-10">Finansiella</td>
-            <% for (let i = 0; i < 12; i++) { %>
-              <td class="num <%= neg(plRows[i]?.finansiella) %>"><%= plRows[i] ? tkr(plRows[i].finansiella) : '–' %></td>
+              <td class="num <%= neg(plRows[i]?.finansiella) %>"><%= plRows[i] ? tkr(plRows[i].finansiella || 0) : '–' %></td>
             <% } %>
             <td class="num bg-gray-50 <%= neg(plTotal.finansiella) %>"><%= tkr(plTotal.finansiella) %></td>
           </tr>
+          <!-- Skatt (only show if any month has data) -->
+          <% if (plRows.some(d => d && d.skatt)) { %>
+          <tr class="border-b border-gray-50 text-gray-600">
+            <td class="text-left sticky left-0 bg-white z-10">Skatt</td>
+            <% for (let i = 0; i < 12; i++) { %>
+              <td class="num <%= neg(plRows[i]?.skatt) %>"><%= plRows[i] ? tkr(plRows[i].skatt || 0) : '–' %></td>
+            <% } %>
+            <td class="num bg-gray-50 <%= neg(plTotal.skatt) %>"><%= tkr(plTotal.skatt) %></td>
+          </tr>
+          <% } %>
           <!-- Resultat -->
           <tr class="border-b border-gray-200 font-bold bg-amber-50/30">
             <td class="text-left sticky left-0 bg-amber-50/30 z-10">Resultat</td>
@@ -228,16 +244,17 @@
     </div>
   </div>
 
-  <!-- KPI Table -->
-  <div class="card">
-    <div class="px-5 py-3 border-b border-gray-100">
+  <!-- KPI Table (editable) -->
+  <div class="card" x-data="kpiEditor()">
+    <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
       <h2 class="text-sm font-bold text-gray-900">KPI:er (tidrapporter)</h2>
+      <span x-show="saveMsg" x-text="saveMsg" class="text-xs text-emerald-600 font-semibold" x-transition></span>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-right">
         <thead>
           <tr class="border-b border-gray-100">
-            <th class="text-left sticky left-0 bg-white z-10 min-w-[160px]">Mått</th>
+            <th class="text-left sticky left-0 bg-white z-10 min-w-[180px]">Mått</th>
             <% for (let i = 0; i < 12; i++) { %>
               <th class="min-w-[70px]"><%= monthNames[i] %></th>
             <% } %>
@@ -245,47 +262,48 @@
           </tr>
         </thead>
         <tbody class="text-[13px]">
-          <tr class="border-b border-gray-50">
-            <td class="text-left sticky left-0 bg-white z-10">Rapporterade h</td>
+          <%
+            const editableKpiRows = [
+              { key: 'rapporterade_h', label: 'Rapporterade h', bold: false },
+              { key: 'interntid_h', label: 'Interntid h', bold: false },
+              { key: 'franvaro_h', label: 'Frånvaro h', bold: false },
+              { key: 'debiterade_h', label: 'Debiterade h', bold: true },
+            ];
+          %>
+          <% for (const row of editableKpiRows) { %>
+          <tr class="border-b border-gray-50 <%= row.bold ? 'font-semibold' : 'text-gray-600' %>">
+            <td class="text-left sticky left-0 bg-white z-10"><%= row.label %></td>
             <% for (let i = 0; i < 12; i++) { %>
-              <td class="num"><%= kpi[i] ? num1(kpi[i].rapporterade_h) : '–' %></td>
+              <td class="num p-0">
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  class="w-full text-right bg-transparent px-2 py-1.5 text-[13px] focus:bg-blue-50 focus:outline-none rounded <%= row.bold ? 'font-semibold' : '' %>"
+                  :value="formatNum(data[<%= i %>]?.['<%= row.key %>'])"
+                  @focus="$el.select()"
+                  @blur="saveCell(<%= i %>, '<%= row.key %>', $el.value)"
+                  @keydown.enter="$el.blur()"
+                >
+              </td>
             <% } %>
-            <td class="num bg-gray-50 font-bold"><%= num1(kpiTotal.rapporterade_h) %></td>
+            <td class="num bg-gray-50 <%= row.bold ? 'font-bold' : '' %>" x-text="formatNum(totals['<%= row.key %>'])"></td>
           </tr>
-          <tr class="border-b border-gray-50 text-gray-600">
-            <td class="text-left sticky left-0 bg-white z-10">Interntid h</td>
-            <% for (let i = 0; i < 12; i++) { %>
-              <td class="num"><%= kpi[i] ? num1(kpi[i].interntid_h) : '–' %></td>
-            <% } %>
-            <td class="num bg-gray-50"><%= num1(kpiTotal.interntid_h) %></td>
-          </tr>
-          <tr class="border-b border-gray-50 text-gray-600">
-            <td class="text-left sticky left-0 bg-white z-10">Frånvaro h</td>
-            <% for (let i = 0; i < 12; i++) { %>
-              <td class="num"><%= kpi[i] ? num1(kpi[i].franvaro_h) : '–' %></td>
-            <% } %>
-            <td class="num bg-gray-50"><%= num1(kpiTotal.franvaro_h) %></td>
-          </tr>
-          <tr class="border-b border-gray-50 font-semibold">
-            <td class="text-left sticky left-0 bg-white z-10">Debiterade h</td>
-            <% for (let i = 0; i < 12; i++) { %>
-              <td class="num"><%= kpi[i] ? num1(kpi[i].debiterade_h) : '–' %></td>
-            <% } %>
-            <td class="num bg-gray-50 font-bold"><%= num1(kpiTotal.debiterade_h) %></td>
-          </tr>
+          <% } %>
+          <!-- Debiteringsgrad (computed) -->
           <tr class="border-b border-gray-50 font-semibold bg-amber-50/30">
             <td class="text-left sticky left-0 bg-amber-50/30 z-10">Debiteringsgrad</td>
             <% for (let i = 0; i < 12; i++) { %>
-              <td class="num"><%= kpi[i] ? pct(kpi[i].debiteringsgrad) : '–' %></td>
+              <td class="num" x-text="formatPct(data[<%= i %>]?.debiteringsgrad)"></td>
             <% } %>
-            <td class="num bg-gray-50 font-bold"><%= pct(kpiTotal.debiteringsgrad) %></td>
+            <td class="num bg-gray-50 font-bold" x-text="formatPct(totals.debiteringsgrad)"></td>
           </tr>
+          <!-- Intäkt/h (computed) -->
           <tr>
             <td class="text-left sticky left-0 bg-white z-10 font-semibold">Intäkt/h</td>
             <% for (let i = 0; i < 12; i++) { %>
-              <td class="num"><%= kpi[i] ? numInt(kpi[i].intakt_per_h) : '–' %></td>
+              <td class="num" x-text="formatInt(data[<%= i %>]?.intakt_per_h)"></td>
             <% } %>
-            <td class="num bg-gray-50 font-bold"><%= numInt(kpiTotal.intakt_per_h) %></td>
+            <td class="num bg-gray-50 font-bold" x-text="formatInt(totals.intakt_per_h)"></td>
           </tr>
         </tbody>
       </table>
@@ -301,7 +319,7 @@
       <table class="w-full text-right">
         <thead>
           <tr class="border-b border-gray-100">
-            <th class="text-left sticky left-0 bg-white z-10 min-w-[160px]">Tjänst</th>
+            <th class="text-left sticky left-0 bg-white z-10 min-w-[180px]">Tjänst</th>
             <% for (let i = 0; i < 12; i++) { %>
               <th class="min-w-[70px]"><%= monthNames[i] %></th>
             <% } %>
@@ -309,45 +327,90 @@
           </tr>
         </thead>
         <tbody class="text-[13px]">
-          <tr class="border-b border-gray-50">
+          <%
+            const srRows = [
+              { key: 'tjanster',     label: 'Tjänster',           color: 'bg-violet-500' },
+              { key: 'varor',        label: 'Varor',              color: 'bg-orange-500' },
+              { key: 'dima',         label: 'DiMa',               color: 'bg-blue-500' },
+              { key: 'supportavtal', label: 'Supportavtal',       color: 'bg-emerald-500' },
+              { key: 'hemsidor',     label: 'Hemsidor',           color: 'bg-cyan-500' },
+              { key: 'layout',       label: 'Layout/Foto/Film',   color: 'bg-pink-500' },
+            ];
+          %>
+          <% for (let ri = 0; ri < srRows.length; ri++) { const sr = srRows[ri]; %>
+          <tr class="<%= ri < srRows.length - 1 ? 'border-b border-gray-50' : '' %>">
             <td class="text-left sticky left-0 bg-white z-10">
               <span class="inline-flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                DiMa
+                <span class="w-2 h-2 rounded-full <%= sr.color %>"></span>
+                <%= sr.label %>
               </span>
             </td>
             <% for (let i = 0; i < 12; i++) { %>
-              <td class="num"><%= serviceRevenue[i] ? tkr(serviceRevenue[i].dima) : '–' %></td>
+              <td class="num"><%= serviceRevenue[i] ? tkr(serviceRevenue[i][sr.key]) : '–' %></td>
             <% } %>
-            <td class="num bg-gray-50 font-bold"><%= tkr(srTotal.dima) %></td>
+            <td class="num bg-gray-50 font-bold"><%= tkr(srTotal[sr.key]) %></td>
           </tr>
-          <tr class="border-b border-gray-50">
-            <td class="text-left sticky left-0 bg-white z-10">
-              <span class="inline-flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                Supportavtal
-              </span>
-            </td>
-            <% for (let i = 0; i < 12; i++) { %>
-              <td class="num"><%= serviceRevenue[i] ? tkr(serviceRevenue[i].supportavtal) : '–' %></td>
-            <% } %>
-            <td class="num bg-gray-50 font-bold"><%= tkr(srTotal.supportavtal) %></td>
-          </tr>
-          <tr>
-            <td class="text-left sticky left-0 bg-white z-10">
-              <span class="inline-flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
-                Webbhotell
-              </span>
-            </td>
-            <% for (let i = 0; i < 12; i++) { %>
-              <td class="num"><%= serviceRevenue[i] ? tkr(serviceRevenue[i].webbhotell) : '–' %></td>
-            <% } %>
-            <td class="num bg-gray-50 font-bold"><%= tkr(srTotal.webbhotell) %></td>
-          </tr>
+          <% } %>
         </tbody>
       </table>
     </div>
   </div>
 
 </div>
+
+<script>
+function kpiEditor() {
+  const raw = <%- JSON.stringify(kpi) %>;
+  const year = <%= year %>;
+  return {
+    data: raw.map(d => d ? { ...d } : { rapporterade_h: 0, interntid_h: 0, franvaro_h: 0, debiterade_h: 0, debiteringsgrad: 0, intakt_per_h: 0 }),
+    saveMsg: '',
+    get totals() {
+      const fields = ['rapporterade_h', 'interntid_h', 'franvaro_h', 'debiterade_h'];
+      const t = {};
+      for (const f of fields) {
+        t[f] = this.data.reduce((s, d) => s + (d?.[f] || 0), 0);
+      }
+      const tillganglig = t.rapporterade_h - t.franvaro_h;
+      t.debiteringsgrad = tillganglig > 0 ? Math.round((t.debiterade_h / tillganglig) * 1000) / 10 : 0;
+      t.intakt_per_h = t.debiterade_h > 0 ? Math.round(<%= plTotal.intakter || 0 %> / t.debiterade_h) : 0;
+      return t;
+    },
+    formatNum(v) { return v ? v.toLocaleString('sv-SE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : ''; },
+    formatPct(v) { return v ? v.toFixed(1) + '%' : '–'; },
+    formatInt(v) { return v ? Math.round(v).toLocaleString('sv-SE') : '–'; },
+    parseNum(str) {
+      if (!str || str === '–') return 0;
+      return parseFloat(str.replace(/\s/g, '').replace(',', '.')) || 0;
+    },
+    async saveCell(fyIndex, field, rawValue) {
+      const value = this.parseNum(rawValue);
+      if (!this.data[fyIndex]) {
+        this.data[fyIndex] = { rapporterade_h: 0, interntid_h: 0, franvaro_h: 0, debiterade_h: 0, debiteringsgrad: 0, intakt_per_h: 0 };
+      }
+      this.data[fyIndex][field] = value;
+      const d = this.data[fyIndex];
+      try {
+        const r = await fetch('/api/ekonomi/kpi', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            year, fyIndex,
+            rapporterade_h: d.rapporterade_h || 0,
+            interntid_h: d.interntid_h || 0,
+            franvaro_h: d.franvaro_h || 0,
+            debiterade_h: d.debiterade_h || 0,
+          }),
+        });
+        const result = await r.json();
+        if (result.success) {
+          this.data[fyIndex].debiteringsgrad = result.debiteringsgrad;
+          this.data[fyIndex].intakt_per_h = result.intakt_per_h;
+          this.saveMsg = 'Sparat';
+          setTimeout(() => this.saveMsg = '', 1500);
+        }
+      } catch (e) { console.error('KPI save failed:', e); }
+    },
+  };
+}
+</script>
