@@ -1166,21 +1166,60 @@ router.get('/debug/blikk-timereports', async (req, res) => {
   }
 });
 
-// Debug: inspect Visma account balances
+// Debug: inspect Visma account balances with pagination test
 router.get('/debug/visma-accountbalances', async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().slice(0, 10);
     const { SpirisClient } = require('../services/spiris-client');
     const client = new SpirisClient();
-    const data = await client.getAccountBalances(date);
-    const items = data.Data || data.data || data;
-    const first = Array.isArray(items) ? items[0] : null;
-    res.json({
-      date,
-      count: Array.isArray(items) ? items.length : 0,
-      fields: first ? Object.keys(first) : [],
-      sample: Array.isArray(items) ? items.slice(0, 10) : items,
-    });
+
+    const results = {};
+
+    // Test 1: no pagination
+    try {
+      const data = await client.get(`/accountbalances/${date}`);
+      const items = data.Data || data.data || data;
+      const arr = Array.isArray(items) ? items : [];
+      const last = arr[arr.length - 1];
+      results['no_params'] = { count: arr.length, firstAcct: arr[0]?.AccountNumber, lastAcct: last?.AccountNumber };
+    } catch (e) { results['no_params'] = { error: e.message.slice(0, 150) }; }
+
+    // Test 2: $pagesize=200
+    try {
+      const data = await client.get(`/accountbalances/${date}`, { $pagesize: 200 });
+      const items = data.Data || data.data || data;
+      const arr = Array.isArray(items) ? items : [];
+      const last = arr[arr.length - 1];
+      results['pagesize_200'] = { count: arr.length, firstAcct: arr[0]?.AccountNumber, lastAcct: last?.AccountNumber };
+    } catch (e) { results['pagesize_200'] = { error: e.message.slice(0, 150) }; }
+
+    // Test 3: $page=2
+    try {
+      const data = await client.get(`/accountbalances/${date}`, { $page: 2, $pagesize: 50 });
+      const items = data.Data || data.data || data;
+      const arr = Array.isArray(items) ? items : [];
+      const last = arr[arr.length - 1];
+      results['page2_size50'] = { count: arr.length, firstAcct: arr[0]?.AccountNumber, lastAcct: last?.AccountNumber };
+    } catch (e) { results['page2_size50'] = { error: e.message.slice(0, 150) }; }
+
+    // Test 4: $page=3
+    try {
+      const data = await client.get(`/accountbalances/${date}`, { $page: 3, $pagesize: 50 });
+      const items = data.Data || data.data || data;
+      const arr = Array.isArray(items) ? items : [];
+      const last = arr[arr.length - 1];
+      results['page3_size50'] = { count: arr.length, firstAcct: arr[0]?.AccountNumber, lastAcct: last?.AccountNumber };
+    } catch (e) { results['page3_size50'] = { error: e.message.slice(0, 150) }; }
+
+    // Test 5: raw response keys
+    try {
+      const data = await client.get(`/accountbalances/${date}`);
+      results['response_keys'] = Object.keys(data);
+      if (data.Meta) results['meta'] = data.Meta;
+      if (data.TotalCount !== undefined) results['totalCount'] = data.TotalCount;
+    } catch (e) { results['response_keys'] = { error: e.message.slice(0, 100) }; }
+
+    res.json(results);
   } catch (error) {
     res.json({ error: error.message });
   }
