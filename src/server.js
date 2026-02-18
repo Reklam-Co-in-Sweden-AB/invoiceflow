@@ -71,6 +71,7 @@ app.get('/api/public/ekonomi', async (req, res) => {
   const pl = new Array(12).fill(null);
   const kpi = new Array(12).fill(null);
   const serviceRevenue = new Array(12).fill(null);
+  const budget = new Array(12).fill(null);
 
   for (const snap of snapshots) {
     const calMonth = new Date(snap.month).getUTCMonth();
@@ -79,6 +80,7 @@ app.get('/api/public/ekonomi', async (req, res) => {
     if (snap.type === 'pl') pl[fyIndex] = data;
     else if (snap.type === 'kpi') kpi[fyIndex] = data;
     else if (snap.type === 'service_revenue') serviceRevenue[fyIndex] = data;
+    else if (snap.type === 'budget') budget[fyIndex] = data;
   }
 
   const plRows = pl.map(d => {
@@ -122,9 +124,14 @@ app.get('/api/public/ekonomi', async (req, res) => {
   const srTotal = {};
   for (const f of srFields) srTotal[f] = serviceRevenue.reduce((s, d) => s + (d ? (d[f] || 0) : 0), 0);
 
+  const budgetTotal = {
+    intakter: budget.reduce((s, d) => s + (d ? (d.intakter || 0) : 0), 0),
+  };
+
   res.json({
     year, yearLabel: `${year - 1}/${String(year).slice(2)}`, monthNames: MONTH_NAMES,
     plRows, plTotal, ackResultatArr, kpi, kpiTotal, serviceRevenue, srTotal,
+    budget, budgetTotal,
   });
 });
 

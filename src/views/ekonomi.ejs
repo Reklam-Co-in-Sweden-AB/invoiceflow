@@ -244,6 +244,46 @@
     </div>
   </div>
 
+  <!-- Budget Table (editable) -->
+  <div class="card" x-data="budgetEditor()">
+    <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+      <h2 class="text-sm font-bold text-gray-900">Budget (tkr)</h2>
+      <span x-show="saveMsg" x-text="saveMsg" class="text-xs text-emerald-600 font-semibold" x-transition></span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-right">
+        <thead>
+          <tr class="border-b border-gray-100">
+            <th class="text-left sticky left-0 bg-white z-10 min-w-[180px]">Post</th>
+            <% for (let i = 0; i < 12; i++) { %>
+              <th class="min-w-[70px]"><%= monthNames[i] %></th>
+            <% } %>
+            <th class="min-w-[80px] bg-gray-50 font-bold">Helår</th>
+          </tr>
+        </thead>
+        <tbody class="text-[13px]">
+          <tr class="border-b border-gray-50 font-semibold bg-purple-50/30">
+            <td class="text-left sticky left-0 bg-purple-50/30 z-10">Budget intäkter</td>
+            <% for (let i = 0; i < 12; i++) { %>
+              <td class="num p-0">
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  class="w-full text-right bg-transparent px-2 py-1.5 text-[13px] font-semibold focus:bg-purple-50 focus:outline-none rounded"
+                  :value="formatTkr(data[<%= i %>]?.intakter)"
+                  @focus="$el.select()"
+                  @blur="saveCell(<%= i %>, $el.value)"
+                  @keydown.enter="$el.blur()"
+                >
+              </td>
+            <% } %>
+            <td class="num bg-gray-50 font-bold" x-text="formatTkr(totals.intakter)"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- KPI Table (editable) -->
   <div class="card" x-data="kpiEditor()">
     <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
@@ -359,6 +399,44 @@
 </div>
 
 <script>
+function budgetEditor() {
+  const raw = <%- JSON.stringify(budget) %>;
+  const year = <%= year %>;
+  return {
+    data: raw.map(d => d ? { ...d } : { intakter: 0 }),
+    saveMsg: '',
+    get totals() {
+      return {
+        intakter: this.data.reduce((s, d) => s + (d?.intakter || 0), 0),
+      };
+    },
+    formatTkr(v) {
+      if (!v) return '';
+      return Math.round(v / 1000).toLocaleString('sv-SE');
+    },
+    parseTkr(str) {
+      if (!str || str === '–') return 0;
+      return (parseFloat(str.replace(/\s/g, '').replace(',', '.')) || 0) * 1000;
+    },
+    async saveCell(fyIndex, rawValue) {
+      const intakter = this.parseTkr(rawValue);
+      this.data[fyIndex] = { intakter };
+      try {
+        const r = await fetch('/api/ekonomi/budget', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ year, fyIndex, intakter }),
+        });
+        const result = await r.json();
+        if (result.success) {
+          this.saveMsg = 'Sparat';
+          setTimeout(() => this.saveMsg = '', 1500);
+        }
+      } catch (e) { console.error('Budget save failed:', e); }
+    },
+  };
+}
+
 function kpiEditor() {
   const raw = <%- JSON.stringify(kpi) %>;
   const year = <%= year %>;

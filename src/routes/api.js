@@ -1184,6 +1184,32 @@ router.patch('/ekonomi/kpi', async (req, res) => {
   }
 });
 
+// ── Ekonomi Budget manual edit ──────────────────────────────
+
+// Save budget data for a specific fiscal year month
+router.patch('/ekonomi/budget', async (req, res) => {
+  try {
+    const { year, fyIndex, intakter } = req.body;
+    if (!year || fyIndex == null) return res.json({ success: false, error: 'year and fyIndex required' });
+
+    const calMonth = (9 + fyIndex) % 12;
+    const calYear = fyIndex < 3 ? year - 1 : year;
+    const month = new Date(Date.UTC(calYear, calMonth, 1));
+
+    const data = JSON.stringify({ intakter: intakter || 0 });
+
+    await prisma.financialSnapshot.upsert({
+      where: { month_type: { month, type: 'budget' } },
+      update: { data, syncedAt: new Date() },
+      create: { month, type: 'budget', data, syncedAt: new Date() },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+});
+
 // ── Ekonomi sync & debug ─────────────────────────────────────
 
 // Trigger ekonomi sync — supports step-by-step: ?type=pl|kpi|service_revenue or all

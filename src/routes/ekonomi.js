@@ -28,6 +28,7 @@ router.get('/', async (req, res) => {
   const pl = new Array(12).fill(null);
   const kpi = new Array(12).fill(null);
   const serviceRevenue = new Array(12).fill(null);
+  const budget = new Array(12).fill(null);
 
   for (const snap of snapshots) {
     const calMonth = new Date(snap.month).getUTCMonth();
@@ -36,6 +37,7 @@ router.get('/', async (req, res) => {
     if (snap.type === 'pl') pl[fyIndex] = data;
     else if (snap.type === 'kpi') kpi[fyIndex] = data;
     else if (snap.type === 'service_revenue') serviceRevenue[fyIndex] = data;
+    else if (snap.type === 'budget') budget[fyIndex] = data;
   }
 
   // Derive P&L rows with computed fields
@@ -99,6 +101,11 @@ router.get('/', async (req, res) => {
     srTotal[f] = serviceRevenue.reduce((s, d) => s + (d ? d[f] : 0), 0);
   }
 
+  // Year totals for budget
+  const budgetTotal = {
+    intakter: budget.reduce((s, d) => s + (d ? (d.intakter || 0) : 0), 0),
+  };
+
   // Stat cards YTD (fiscal year)
   const nowFY = currentFiscalYear();
   const currentFyIndex = (new Date().getMonth() + 3) % 12;
@@ -127,6 +134,8 @@ router.get('/', async (req, res) => {
     kpiTotal,
     serviceRevenue,
     srTotal,
+    budget,
+    budgetTotal,
     intakterYtd,
     resultatYtd,
     latestDebiteringsgrad,
