@@ -1136,13 +1136,20 @@ router.get('/debug/visma-recurring', async (req, res) => {
 
 // ── Ekonomi sync & debug ─────────────────────────────────────
 
-// Trigger full ekonomi sync for a year
+// Trigger ekonomi sync — supports step-by-step: ?type=pl|kpi|service_revenue or all
 router.post('/sync/ekonomi', async (req, res) => {
   try {
     const year = parseInt(req.query.year) || new Date().getFullYear();
-    const { syncAll } = require('../services/ekonomi-sync');
-    const result = await syncAll(year);
-    res.json({ success: true, year, ...result });
+    const type = req.query.type || 'all';
+    const { syncVismaFinancials, syncBlikkKpis, syncServiceRevenue, syncAll } = require('../services/ekonomi-sync');
+
+    let result;
+    if (type === 'pl') result = await syncVismaFinancials(year);
+    else if (type === 'kpi') result = await syncBlikkKpis(year);
+    else if (type === 'service_revenue') result = await syncServiceRevenue(year);
+    else result = await syncAll(year);
+
+    res.json({ success: true, year, type, ...result });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
