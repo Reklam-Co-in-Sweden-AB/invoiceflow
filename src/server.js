@@ -128,11 +128,63 @@ app.get('/api/public/ekonomi', async (req, res) => {
     intakter: budget.reduce((s, d) => s + (d ? (d.intakter || 0) : 0), 0),
   };
 
+  // Forecast: fill months where service_revenue has no actual revenue,
+  // plus the current (incomplete) month which gets both utfall + prognos
+  const { calculateForecast } = require('./services/forecast');
+  const forecast = await calculateForecast(year);
+  const nowMonth = new Date().getMonth();
+  const curFyIdx = year === currentFY ? (nowMonth + 3) % 12 : -1;
+  const forecastData = serviceRevenue.map((sr, i) => {
+    if (i === curFyIdx) return forecast[i]; // current month: always show forecast
+    const hasRevenue = sr && srFields.some(f => sr[f] > 0);
+    return hasRevenue ? null : forecast[i];
+  });
+
   res.json({
     year, yearLabel: `${year - 1}/${String(year).slice(2)}`, monthNames: MONTH_NAMES,
     plRows, plTotal, ackResultatArr, kpi, kpiTotal, serviceRevenue, srTotal,
-    budget, budgetTotal,
+    budget, budgetTotal, forecastData,
   });
+});
+
+// Public support contracts API (secured by API key, no session needed)
+app.get('/api/public/support-contracts', async (req, res) => {
+  const apiKey = process.env.EKONOMI_API_KEY;
+  if (apiKey && req.headers['x-api-key'] !== apiKey) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+
+  const { PrismaClient } = require('./generated/prisma');
+  const prisma = new PrismaClient();
+
+  try {
+    const projects = await prisma.project.findMany({
+      where: {
+        category: 'Supportavtal',
+        isCompleted: false,
+      },
+      include: {
+        customer: { select: { name: true } },
+      },
+      orderBy: { title: 'asc' },
+    });
+
+    const contracts = projects.map(p => ({
+      id: p.id,
+      blikkProjectId: p.blikkProjectId,
+      title: p.title,
+      customerName: p.customer?.name || 'Okänd kund',
+      monthlyPrice: p.monthlyPrice || 0,
+      billingInterval: p.billingInterval,
+      status: p.status,
+    }));
+
+    res.json({ contracts });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  } finally {
+    await prisma.$disconnect();
+  }
 });
 
 // Cron endpoint (secured by CRON_SECRET, no session needed)

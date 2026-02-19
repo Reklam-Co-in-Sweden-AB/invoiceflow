@@ -1,31 +1,64 @@
 const { Router } = require('express');
 const { PrismaClient } = require('../generated/prisma');
+const { effectivePrice, isDueForMonth } = require('../utils/billing');
+const { calculateForecast } = require('../services/forecast');
 
 const router = Router();
 const prisma = new PrismaClient();
 
 router.get('/', async (req, res) => {
-  // Get current month (first day)
   const now = new Date();
   const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  // Invoice stats for current month
-  const invoices = await prisma.invoice.findMany({
-    where: { invoiceMonth: currentMonth },
-    include: { customer: true },
+  // Active projects with billing data
+  const projects = await prisma.project.findMany({
+    where: { isCompleted: false },
+    include: { customer: true, billingSplits: true, invoiceRows: true },
   });
 
-  const totalCount = invoices.length;
-  const totalAmount = invoices.reduce((s, i) => s + i.totalAmount, 0);
+  // Classify projects for the current month
+  const dueProjects = [];
+  const invoicedProjects = [];
+  const weekTotals = [0, 0, 0, 0];
+  const weekCounts = [0, 0, 0, 0];
 
-  const pendingInvoices = invoices.filter(i => i.status === 'pending_review');
-  const pendingCount = pendingInvoices.length;
-  const pendingAmount = pendingInvoices.reduce((s, i) => s + i.totalAmount, 0);
+  for (const p of projects) {
+    const price = effectivePrice(p);
+    if (!price) continue;
 
-  const approvedStatuses = ['approved', 'scheduled', 'exporting', 'exported', 'confirmed'];
-  const approvedInvoices = invoices.filter(i => approvedStatuses.includes(i.status));
-  const approvedCount = approvedInvoices.length;
-  const approvedAmount = approvedInvoices.reduce((s, i) => s + i.totalAmount, 0);
+    const isPaused = p.pauseFrom && p.pauseUntil &&
+      new Date(p.pauseFrom) <= now && new Date(p.pauseUntil) >= now;
+    if (isPaused) continue;
+
+    if (!isDueForMonth(p, currentMonth)) continue;
+
+    const invoiced = p.lastInvoicedMonth &&
+      new Date(p.lastInvoicedMonth).getFullYear() === currentMonth.getFullYear() &&
+      new Date(p.lastInvoicedMonth).getMonth() === currentMonth.getMonth();
+
+    if (invoiced) {
+      invoicedProjects.push({ ...p, _price: price });
+    } else {
+      dueProjects.push({ ...p, _price: price });
+    }
+
+    if (p.invoiceWeek) {
+      weekTotals[p.invoiceWeek - 1] += price;
+      weekCounts[p.invoiceWeek - 1]++;
+    }
+  }
+
+  const dueCount = dueProjects.length;
+  const dueAmount = dueProjects.reduce((s, p) => s + p._price, 0);
+  const invoicedCount = invoicedProjects.length;
+  const invoicedAmount = invoicedProjects.reduce((s, p) => s + p._price, 0);
+
+  // Forecast for current month
+  const fyYear = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+  const fyIndex = (now.getMonth() + 3) % 12;
+  const forecast = await calculateForecast(fyYear);
+  const fcMonth = forecast[fyIndex];
+  const forecastTotal = Object.values(fcMonth).reduce((s, v) => s + v, 0);
 
   // Hosting MRR
   const hostingSubs = await prisma.hostingSubscription.findMany({
@@ -38,13 +71,6 @@ router.get('/', async (req, res) => {
     return sum + subTotal * multiplier;
   }, 0);
 
-  // Batches for current month
-  const batches = await prisma.batch.findMany({
-    where: { invoiceMonth: currentMonth },
-    orderBy: { weekNumber: 'asc' },
-    include: { invoices: true },
-  });
-
   // Recent sync logs
   const recentLogs = await prisma.syncLog.findMany({
     orderBy: { createdAt: 'desc' },
@@ -52,19 +78,16 @@ router.get('/', async (req, res) => {
     include: { invoice: true },
   });
 
-  // Top 5 pending for quick view
-  const topPending = pendingInvoices.slice(0, 5);
-
   res.render('dashboard', {
     currentMonth,
-    totalCount, totalAmount,
-    approvedCount, approvedAmount,
-    pendingCount, pendingAmount,
+    dueCount, dueAmount,
+    invoicedCount, invoicedAmount,
+    forecastTotal,
     mrr,
     hostingActiveCount: hostingSubs.length,
-    batches,
+    weekTotals, weekCounts,
     recentLogs,
-    topPending,
+    topDue: dueProjects.slice(0, 5),
   });
 });
 

@@ -92,6 +92,16 @@
     </div>
   </div>
 
+  <!-- Forecast Chart: Utfall + Prognos stacked bar -->
+  <div class="card">
+    <div class="px-5 py-3 border-b border-gray-100">
+      <h2 class="text-sm font-bold text-gray-900">Tjänsteintäkter: Utfall & Prognos (tkr)</h2>
+    </div>
+    <div class="p-4">
+      <canvas id="forecastChart" height="280"></canvas>
+    </div>
+  </div>
+
   <!-- P&L Table -->
   <div class="card">
     <div class="px-5 py-3 border-b border-gray-100">
@@ -396,7 +406,79 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
+// Forecast chart
+(function() {
+  const monthNames = <%- JSON.stringify(monthNames) %>;
+  const serviceRevenue = <%- JSON.stringify(serviceRevenue) %>;
+  const forecastData = <%- JSON.stringify(forecastData) %>;
+
+  const categories = [
+    { key: 'dima',         label: 'DiMa',             color: [59, 130, 246] },
+    { key: 'supportavtal', label: 'Supportavtal',       color: [16, 185, 129] },
+    { key: 'hemsidor',     label: 'Hemsidor',           color: [6, 182, 212] },
+    { key: 'tjanster',     label: 'Tjänster',           color: [139, 92, 246] },
+    { key: 'layout',       label: 'Layout/Foto/Film',   color: [236, 72, 153] },
+    { key: 'varor',        label: 'Varor',              color: [249, 115, 22] },
+  ];
+
+  const datasets = [];
+  for (const cat of categories) {
+    const [r, g, b] = cat.color;
+    // Utfall dataset (solid)
+    datasets.push({
+      label: cat.label,
+      data: monthNames.map((_, i) => serviceRevenue[i] ? Math.round((serviceRevenue[i][cat.key] || 0) / 1000) : 0),
+      backgroundColor: `rgba(${r}, ${g}, ${b}, 0.85)`,
+      stack: 'revenue',
+      categoryPercentage: 0.6,
+    });
+    // Prognos dataset (transparent)
+    datasets.push({
+      label: cat.label + ' (prognos)',
+      data: monthNames.map((_, i) => forecastData[i] ? Math.round((forecastData[i][cat.key] || 0) / 1000) : 0),
+      backgroundColor: `rgba(${r}, ${g}, ${b}, 0.3)`,
+      borderColor: `rgba(${r}, ${g}, ${b}, 1)`,
+      borderWidth: 1,
+      stack: 'revenue',
+      categoryPercentage: 0.6,
+    });
+  }
+
+  const ctx = document.getElementById('forecastChart');
+  new Chart(ctx, {
+    type: 'bar',
+    data: { labels: monthNames, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            filter: function(item) {
+              return !item.text.includes('(prognos)');
+            },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const label = ctx.dataset.label.replace(' (prognos)', '');
+              const suffix = ctx.dataset.label.includes('(prognos)') ? ' (prognos)' : '';
+              return label + suffix + ': ' + ctx.parsed.y + ' tkr';
+            },
+          },
+        },
+      },
+      scales: {
+        x: { stacked: true },
+        y: { stacked: true, beginAtZero: true, ticks: { callback: v => v + ' tkr' } },
+      },
+    },
+  });
+})();
+
 function budgetEditor() {
   const raw = <%- JSON.stringify(budget) %>;
   const year = <%= year %>;

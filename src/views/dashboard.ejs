@@ -3,6 +3,7 @@
   const monthLabel = monthNames[currentMonth.getMonth()];
   const yearLabel = currentMonth.getFullYear();
   function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+  function formatTkr(n) { return Math.round(n / 1000).toLocaleString('sv-SE') + ' tkr'; }
 
   function timeAgo(date) {
     const now = new Date();
@@ -28,40 +29,40 @@
 <!-- Stat cards -->
 <div class="px-6 pt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-  <!-- Total invoices -->
+  <!-- Att fakturera -->
   <div class="card stat-card blue p-5">
     <div class="flex items-center justify-between mb-3">
-      <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Fakturor</span>
+      <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Att fakturera</span>
       <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
         <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
       </div>
     </div>
-    <div class="text-2xl font-extrabold text-gray-900 num"><%= totalCount %></div>
-    <div class="text-sm text-gray-500 mt-1 num"><%= formatSEK(totalAmount) %></div>
+    <div class="text-2xl font-extrabold text-gray-900 num"><%= dueCount %></div>
+    <div class="text-sm text-gray-500 mt-1 num"><%= formatSEK(dueAmount) %></div>
   </div>
 
-  <!-- Approved -->
+  <!-- Fakturerat -->
   <div class="card stat-card green p-5">
     <div class="flex items-center justify-between mb-3">
-      <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Godkända</span>
+      <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Fakturerat</span>
       <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
         <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
     </div>
-    <div class="text-2xl font-extrabold text-gray-900 num"><%= approvedCount %></div>
-    <div class="text-sm text-gray-500 mt-1 num"><%= formatSEK(approvedAmount) %></div>
+    <div class="text-2xl font-extrabold text-gray-900 num"><%= invoicedCount %></div>
+    <div class="text-sm text-gray-500 mt-1 num"><%= formatSEK(invoicedAmount) %></div>
   </div>
 
-  <!-- Pending review -->
+  <!-- Prognos denna månad -->
   <div class="card stat-card amber p-5">
     <div class="flex items-center justify-between mb-3">
-      <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Att granska</span>
+      <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Prognos</span>
       <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
       </div>
     </div>
-    <div class="text-2xl font-extrabold text-gray-900 num"><%= pendingCount %></div>
-    <div class="text-sm text-gray-500 mt-1 num"><%= formatSEK(pendingAmount) %></div>
+    <div class="text-2xl font-extrabold text-gray-900 num"><%= formatTkr(forecastTotal) %></div>
+    <div class="text-sm text-gray-500 mt-1">Förväntad fakturering</div>
   </div>
 
   <!-- Hosting MRR -->
@@ -85,7 +86,7 @@
   <div class="card p-5 lg:col-span-2">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-bold text-gray-900">Veckofördelning</h3>
-      <span class="text-xs text-gray-400"><%= batches.length %> batcher</span>
+      <span class="text-xs text-gray-400"><%= weekCounts.reduce((a,b) => a+b, 0) %> projekt</span>
     </div>
     <div class="relative" style="height: 240px;">
       <canvas id="weeklyChart"></canvas>
@@ -120,57 +121,54 @@
 
 </div>
 
-<!-- Pending review quick table -->
+<!-- Top due projects table -->
 <div class="px-6 pt-6 pb-8">
   <div class="card">
     <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-      <h3 class="text-sm font-bold text-gray-900">Väntar på granskning</h3>
-      <a href="/invoices/review" class="btn btn-ghost text-xs">
+      <h3 class="text-sm font-bold text-gray-900">Att fakturera</h3>
+      <a href="/projects" class="btn btn-ghost text-xs">
         Visa alla
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
       </a>
     </div>
 
-    <% if (topPending.length === 0) { %>
+    <% if (topDue.length === 0) { %>
       <div class="px-5 py-8 text-center">
-        <div class="text-sm text-gray-400">Inga fakturor att granska</div>
-        <div class="text-xs text-gray-300 mt-1">Allt ser bra ut!</div>
+        <div class="text-sm text-gray-400">Inga projekt att fakturera denna månad</div>
+        <div class="text-xs text-gray-300 mt-1">Allt är fakturerat!</div>
       </div>
     <% } else { %>
       <table class="w-full">
         <thead>
           <tr class="border-b border-gray-50">
             <th>Kund</th>
-            <th>Tjänst</th>
+            <th>Projekt</th>
+            <th>Vecka</th>
             <th class="text-right">Belopp</th>
-            <th class="text-right">Status</th>
           </tr>
         </thead>
         <tbody>
-          <% topPending.forEach(function(inv) { %>
+          <% topDue.forEach(function(p) { %>
             <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
               <td class="font-medium text-gray-900">
-                <%= inv.customer ? inv.customer.name : 'Okänd kund' %>
+                <%= p.customer ? p.customer.name : 'Okänd kund' %>
               </td>
-              <td class="text-gray-500">
-                <%
-                  const serviceLabels = { consulting: 'Konsulttjänst', hosting: 'Webbhotell', support: 'Support', development: 'Utveckling' };
-                %>
-                <%= serviceLabels[inv.serviceType] || inv.serviceType %>
+              <td class="text-gray-500 truncate max-w-[200px]">
+                <%= p.title %>
               </td>
-              <td class="text-right num font-medium text-gray-900"><%= formatSEK(inv.totalAmount) %></td>
-              <td class="text-right">
-                <span class="pill pill-pending">Granskas</span>
+              <td class="text-gray-400">
+                <% if (p.invoiceWeek) { %>V<%= p.invoiceWeek %><% } else { %>–<% } %>
               </td>
+              <td class="text-right num font-medium text-gray-900"><%= formatSEK(p._price) %></td>
             </tr>
           <% }); %>
         </tbody>
       </table>
 
       <div class="px-5 py-3 border-t border-gray-50 flex items-center justify-between">
-        <span class="text-xs text-gray-400"><%= pendingCount %> fakturor väntar totalt</span>
-        <a href="/invoices/review" class="btn btn-accent text-xs">
-          Granska nu
+        <span class="text-xs text-gray-400"><%= dueCount %> projekt att fakturera</span>
+        <a href="/projects" class="btn btn-accent text-xs">
+          Till projekt
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
         </a>
       </div>
@@ -184,36 +182,22 @@
   document.addEventListener('DOMContentLoaded', function () {
     var ctx = document.getElementById('weeklyChart').getContext('2d');
 
-    var batchData = <%- JSON.stringify(batches.map(function(b) {
-      return { week: b.weekNumber, amount: b.totalAmount, count: b.invoiceCount, status: b.status };
-    })) %>;
-
-    var labels = batchData.map(function (b) { return 'V' + b.week; });
-    var amounts = batchData.map(function (b) { return b.amount; });
-    var counts = batchData.map(function (b) { return b.count; });
-
-    var statusColors = {
-      draft: 'rgba(156, 163, 175, 0.7)',
-      pending_review: 'rgba(245, 158, 11, 0.7)',
-      approved: 'rgba(16, 185, 129, 0.7)',
-      scheduled: 'rgba(139, 92, 246, 0.7)',
-      exporting: 'rgba(59, 130, 246, 0.7)',
-      exported: 'rgba(16, 185, 129, 0.85)',
-      confirmed: 'rgba(5, 150, 105, 0.9)'
-    };
-
-    var bgColors = batchData.map(function (b) {
-      return statusColors[b.status] || 'rgba(51, 102, 255, 0.7)';
-    });
+    var weekTotals = <%- JSON.stringify(weekTotals) %>;
+    var weekCounts = <%- JSON.stringify(weekCounts) %>;
 
     new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: labels,
+        labels: ['V1', 'V2', 'V3', 'V4'],
         datasets: [{
           label: 'Belopp (kr)',
-          data: amounts,
-          backgroundColor: bgColors,
+          data: weekTotals,
+          backgroundColor: [
+            'rgba(59, 130, 246, 0.7)',
+            'rgba(16, 185, 129, 0.7)',
+            'rgba(245, 158, 11, 0.7)',
+            'rgba(139, 92, 246, 0.7)',
+          ],
           borderRadius: 6,
           borderSkipped: false,
           maxBarThickness: 48
@@ -226,13 +210,11 @@
           legend: { display: false },
           tooltip: {
             callbacks: {
-              title: function (items) { return items[0].label; },
               label: function (item) {
                 var idx = item.dataIndex;
                 return [
                   Math.round(item.raw).toLocaleString('sv-SE') + ' kr',
-                  counts[idx] + ' fakturor',
-                  'Status: ' + batchData[idx].status
+                  weekCounts[idx] + ' projekt'
                 ];
               }
             },

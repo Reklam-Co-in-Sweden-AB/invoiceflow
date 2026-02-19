@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { PrismaClient } = require('../generated/prisma');
+const { calculateForecast } = require('../services/forecast');
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -39,6 +40,16 @@ router.get('/', async (req, res) => {
     else if (snap.type === 'service_revenue') serviceRevenue[fyIndex] = data;
     else if (snap.type === 'budget') budget[fyIndex] = data;
   }
+
+  // Forecast: fill months where service_revenue has no actual revenue,
+  // plus the current (incomplete) month which gets both utfall + prognos
+  const forecast = await calculateForecast(year);
+  const nowFyIdx = year === currentFiscalYear() ? (new Date().getMonth() + 3) % 12 : -1;
+  const forecastData = serviceRevenue.map((sr, i) => {
+    if (i === nowFyIdx) return forecast[i]; // current month: always show forecast
+    const hasRevenue = sr && ['tjanster', 'varor', 'dima', 'supportavtal', 'hemsidor', 'layout'].some(f => sr[f] > 0);
+    return hasRevenue ? null : forecast[i];
+  });
 
   // Derive P&L rows with computed fields
   const plRows = pl.map(d => {
@@ -134,6 +145,7 @@ router.get('/', async (req, res) => {
     kpiTotal,
     serviceRevenue,
     srTotal,
+    forecastData,
     budget,
     budgetTotal,
     intakterYtd,
