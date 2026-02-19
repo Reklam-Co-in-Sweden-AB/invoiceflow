@@ -50,10 +50,6 @@
             { type: 'service_revenue', label: 'Tjänsteintäkter' },
           ];
           (async () => {
-            syncStatus = 'Rensar gammal data...';
-            try {
-              await fetch('/api/sync/ekonomi/cleanup?year=' + year, { method: 'POST' });
-            } catch (e) { /* ignore cleanup errors */ }
             for (const step of steps) {
               for (let m = 0; m < 12; m++) {
                 syncStatus = step.label + ' — ' + monthNames[m] + '...';
