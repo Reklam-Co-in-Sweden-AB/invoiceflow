@@ -53,6 +53,7 @@ app.get('/api/public/ekonomi', async (req, res) => {
     return res.status(401).json({ error: 'Invalid API key' });
   }
 
+  try {
   const { PrismaClient } = require('./generated/prisma');
   const prisma = new PrismaClient();
   const MONTH_NAMES = ['okt', 'nov', 'dec', 'jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep'];
@@ -150,6 +151,10 @@ app.get('/api/public/ekonomi', async (req, res) => {
     plRows, plTotal, ackResultatArr, kpi, kpiTotal, serviceRevenue, srTotal,
     budget, budgetTotal, forecastData,
   });
+  } catch (e) {
+    console.error('Ekonomi API error:', e);
+    res.status(500).json({ error: e.message, stack: e.stack });
+  }
 });
 
 // Public support contracts API (secured by API key, no session needed)
