@@ -8,6 +8,7 @@ const expressLayouts = require('express-ejs-layouts');
 const path = require('path');
 
 const { requireAuth } = require('./middleware/auth');
+const { calculateForecast } = require('./services/forecast');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -130,15 +131,19 @@ app.get('/api/public/ekonomi', async (req, res) => {
 
   // Forecast: fill months where service_revenue has no actual revenue,
   // plus the current (incomplete) month which gets both utfall + prognos
-  const { calculateForecast } = require('./services/forecast');
-  const forecast = await calculateForecast(year);
-  const nowMonth = new Date().getMonth();
-  const curFyIdx = year === currentFY ? (nowMonth + 3) % 12 : -1;
-  const forecastData = serviceRevenue.map((sr, i) => {
-    if (i === curFyIdx) return forecast[i]; // current month: always show forecast
-    const hasRevenue = sr && srFields.some(f => sr[f] > 0);
-    return hasRevenue ? null : forecast[i];
-  });
+  let forecastData = new Array(12).fill(null);
+  try {
+    const forecast = await calculateForecast(year);
+    const nowMonth = new Date().getMonth();
+    const curFyIdx = year === currentFY ? (nowMonth + 3) % 12 : -1;
+    forecastData = serviceRevenue.map((sr, i) => {
+      if (i === curFyIdx) return forecast[i];
+      const hasRevenue = sr && srFields.some(f => sr[f] > 0);
+      return hasRevenue ? null : forecast[i];
+    });
+  } catch (e) {
+    console.error('Forecast calculation failed:', e.message);
+  }
 
   res.json({
     year, yearLabel: `${year - 1}/${String(year).slice(2)}`, monthNames: MONTH_NAMES,
