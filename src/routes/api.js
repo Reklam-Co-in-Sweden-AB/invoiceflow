@@ -321,7 +321,7 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
 
         if (!hasSplits) {
           // --- Standard single-invoice path ---
-          if (!hasInvoiceRows && !project.monthlyPrice) { results.push({ id: project.id, title: project.title, success: false, error: 'Inget pris satt' }); continue; }
+          if (!project.monthlyPrice) { results.push({ id: project.id, title: project.title, success: false, error: 'Inget pris satt' }); continue; }
           if (!project.customer) { results.push({ id: project.id, title: project.title, success: false, error: 'Ingen kund kopplad' }); continue; }
           if (!project.customer.vismaCustomerId) { results.push({ id: project.id, title: project.title, success: false, error: 'Kunden saknar Visma-ID' }); continue; }
 
