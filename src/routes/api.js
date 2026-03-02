@@ -222,6 +222,66 @@ router.post('/projects/fix-next-month', async (req, res) => {
   res.json({ success: true, fixed: result.count });
 });
 
+// Auto-assign Visma article to supportavtal projects based on closest price
+router.post('/projects/assign-support-articles', async (req, res) => {
+  try {
+    // Supportavtal articles with their prices
+    const supportArticles = [
+      { articleNumber: '108', price: 349 },  // Small
+      { articleNumber: '109', price: 660 },  // Medium
+      { articleNumber: '117', price: 1250 }, // Large
+    ];
+
+    // Find local article IDs
+    const articles = await Promise.all(
+      supportArticles.map(async (sa) => {
+        const art = await prisma.article.findUnique({ where: { articleNumber: sa.articleNumber } });
+        return { ...sa, id: art?.id || null };
+      })
+    );
+    const missing = articles.filter(a => !a.id);
+    if (missing.length > 0) {
+      return res.json({ success: false, error: `Artiklar saknas lokalt: ${missing.map(a => a.articleNumber).join(', ')}. Synka artiklar först.` });
+    }
+
+    // Find supportavtal projects without article (or all if force)
+    const force = req.query.force === '1';
+    const projects = await prisma.project.findMany({
+      where: {
+        category: 'Supportavtal',
+        isCompleted: false,
+        monthlyPrice: { not: null },
+        ...(force ? {} : { articleId: null }),
+      },
+      select: { id: true, title: true, monthlyPrice: true, articleId: true },
+    });
+
+    const results = [];
+    for (const proj of projects) {
+      // Find closest article by price
+      let bestArticle = articles[0];
+      let bestDiff = Math.abs(proj.monthlyPrice - articles[0].price);
+      for (const art of articles) {
+        const diff = Math.abs(proj.monthlyPrice - art.price);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestArticle = art;
+        }
+      }
+
+      await prisma.project.update({
+        where: { id: proj.id },
+        data: { articleId: bestArticle.id },
+      });
+      results.push({ id: proj.id, title: proj.title, price: proj.monthlyPrice, article: bestArticle.articleNumber });
+    }
+
+    res.json({ success: true, assigned: results.length, results });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Bulk send project invoices to Visma — supports billing splits
 router.post('/projects/bulk-send-to-visma', async (req, res) => {
   try {
