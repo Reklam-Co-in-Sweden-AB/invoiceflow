@@ -304,8 +304,6 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthNames = ['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december'];
-
     const results = [];
     for (const project of projects) {
       try {
@@ -325,7 +323,7 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
             new Date(o.month).getMonth() === monthStart.getMonth()
           );
           const price = override ? override.price : project.monthlyPrice;
-          const periodText = `${project.title} — ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+          const periodText = buildPeriodText(project.title, now, project.billingInterval);
 
           let vismaProjectId = null;
           if (project.orderNumber) {
@@ -401,7 +399,7 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
 
           for (let si = 0; si < project.billingSplits.length; si++) {
             const split = project.billingSplits[si];
-            const periodText = split.label || `${project.title} — ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+            const periodText = split.label || buildPeriodText(project.title, now, project.billingInterval);
 
             const rows = [];
             rows.push({
@@ -860,7 +858,7 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthNames = ['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december'];
+
 
     const { SpirisClient } = require('../services/spiris-client');
     const client = new SpirisClient();
@@ -879,7 +877,7 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
         new Date(o.month).getMonth() === monthStart.getMonth()
       );
       const price = override ? override.price : project.monthlyPrice;
-      const periodText = `${project.title} — ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+      const periodText = buildPeriodText(project.title, now, project.billingInterval);
 
       const rows = [];
       let totalAmount = 0;
@@ -943,7 +941,7 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
 
       for (let si = 0; si < project.billingSplits.length; si++) {
         const split = project.billingSplits[si];
-        const periodText = split.label || `${project.title} — ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+        const periodText = split.label || buildPeriodText(project.title, now, project.billingInterval);
 
         const rows = [];
         rows.push({
@@ -1020,6 +1018,17 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
 function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
 
 const INTERVAL_MONTHS = { monthly: 1, quarterly: 3, semi_annual: 6, annual: 12 };
+const MONTH_NAMES_SV = ['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december'];
+
+function buildPeriodText(title, date, billingInterval) {
+  const months = INTERVAL_MONTHS[billingInterval] || 1;
+  const fromMonth = MONTH_NAMES_SV[date.getMonth()];
+  if (months === 1) return `${title} — ${fromMonth} ${date.getFullYear()}`;
+  const toDate = new Date(date.getFullYear(), date.getMonth() + months - 1, 1);
+  const toMonth = MONTH_NAMES_SV[toDate.getMonth()];
+  return `${title} — ${fromMonth} ${date.getFullYear()} – ${toMonth} ${toDate.getFullYear()}`;
+}
+
 function calcNextInvoiceMonth(currentMonth, billingInterval) {
   const months = INTERVAL_MONTHS[billingInterval] || 1;
   const next = new Date(currentMonth);
