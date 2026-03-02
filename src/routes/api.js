@@ -789,6 +789,7 @@ router.patch('/projects/:id/settings', async (req, res) => {
   if (req.body.ourReference !== undefined) data.ourReference = req.body.ourReference || null;
   if (req.body.buyersOrderRef !== undefined) data.buyersOrderRef = req.body.buyersOrderRef || null;
   if (req.body.invoiceText !== undefined) data.invoiceText = req.body.invoiceText || null;
+  if (req.body.lastInvoicedMonth !== undefined) data.lastInvoicedMonth = req.body.lastInvoicedMonth ? new Date(req.body.lastInvoicedMonth) : null;
 
   const project = await prisma.project.update({
     where: { id: Number(req.params.id) },
