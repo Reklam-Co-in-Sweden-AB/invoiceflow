@@ -197,11 +197,13 @@ router.get('/debug/visma-draft', async (req, res) => {
 router.post('/projects/reset-invoiced', async (req, res) => {
   const now = new Date();
   const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const where = { lastInvoicedMonth: { not: null } };
+  if (req.body.category) where.category = req.body.category;
   const result = await prisma.project.updateMany({
-    where: { lastInvoicedMonth: { not: null } },
+    where,
     data: { lastInvoicedMonth: null, nextInvoiceMonth: currentMonth },
   });
-  res.json({ success: true, reset: result.count });
+  res.json({ success: true, reset: result.count, category: req.body.category || 'alla' });
 });
 
 // Fix nextInvoiceMonth for all active projects that point to the future
