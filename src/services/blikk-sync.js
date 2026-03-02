@@ -323,8 +323,7 @@ async function _processOneProject(client, listProj, force) {
   const data = {
     orderNumber: proj.orderNumber || null,
     title: (proj.title || '').trim(),
-    category: proj.category?.name || null,
-    categoryColor: proj.category?.color || null,
+    ...(proj.category?.name ? { category: proj.category.name, categoryColor: proj.category.color || null } : {}),
     invoiceType: proj.invoiceType || null,
     status: proj.status?.name || null,
     isCompleted: proj.status?.isCompletedStatus || false,
