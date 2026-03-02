@@ -600,21 +600,31 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
       async sendBulk() {
         if (this.selected.length === 0 || this.sending) return;
         this.sending = true;
+        const BATCH_SIZE = 5;
+        const allResults = [];
         try {
-          const resp = await fetch('/api/projects/bulk-send-to-visma', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ projectIds: this.selected }),
-          });
-          const text = await resp.text();
-          try {
-            this.bulkResult = JSON.parse(text);
-          } catch (_) {
-            this.bulkResult = { sent: 0, failed: this.selected.length, results: [{ title: 'Serverfel', success: false, error: resp.status === 504 ? 'Timeout — för många fakturor på en gång, prova färre' : text.slice(0, 200) }] };
+          for (let i = 0; i < this.selected.length; i += BATCH_SIZE) {
+            const batch = this.selected.slice(i, i + BATCH_SIZE);
+            try {
+              const resp = await fetch('/api/projects/bulk-send-to-visma', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectIds: batch }),
+              });
+              const text = await resp.text();
+              try {
+                const data = JSON.parse(text);
+                if (data.results) allResults.push(...data.results);
+              } catch (_) {
+                batch.forEach(() => allResults.push({ title: 'Serverfel', success: false, error: resp.status === 504 ? 'Timeout' : text.slice(0, 200) }));
+              }
+            } catch (e) {
+              batch.forEach(() => allResults.push({ title: 'Fel', success: false, error: e.message }));
+            }
+            // Update live progress
+            this.bulkResult = { sent: allResults.filter(r => r.success).length, failed: allResults.filter(r => !r.success).length, results: allResults };
           }
           this.clearSelection();
-        } catch (e) {
-          this.bulkResult = { sent: 0, failed: this.selected.length, results: [{ title: 'Fel', success: false, error: e.message }] };
         } finally {
           this.sending = false;
         }
