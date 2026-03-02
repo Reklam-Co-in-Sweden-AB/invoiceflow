@@ -204,6 +204,24 @@ router.post('/projects/reset-invoiced', async (req, res) => {
   res.json({ success: true, reset: result.count });
 });
 
+// Fix nextInvoiceMonth for all active projects that point to the future
+router.post('/projects/fix-next-month', async (req, res) => {
+  const now = new Date();
+  const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const result = await prisma.project.updateMany({
+    where: {
+      isCompleted: false,
+      lastInvoicedMonth: null,
+      OR: [
+        { nextInvoiceMonth: { gt: currentMonth } },
+        { nextInvoiceMonth: null },
+      ],
+    },
+    data: { nextInvoiceMonth: currentMonth },
+  });
+  res.json({ success: true, fixed: result.count });
+});
+
 // Bulk send project invoices to Visma — supports billing splits
 router.post('/projects/bulk-send-to-visma', async (req, res) => {
   try {
