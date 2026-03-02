@@ -241,34 +241,36 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
 
                 <!-- Week -->
                 <td class="text-center">
+                  <div class="inline-flex items-center" x-data="{ editing: false, val: '<%= proj.invoiceWeek || '' %>' }">
                   <% if (proj.invoiceWeek) { %>
-                    <span class="inline-flex items-center gap-1">
-                      <span class="text-sm font-bold text-blue-700 num">V.<%= proj.invoiceWeek %></span>
-                      <button
-                        class="text-gray-300 hover:text-red-500 transition-colors"
-                        hx-patch="/api/projects/<%= proj.id %>/price"
-                        hx-vals='{"invoiceWeek": ""}'
-                        hx-swap="none"
-                        hx-on::after-request="location.reload()"
-                      >
+                    <span x-show="!editing" class="inline-flex items-center gap-1">
+                      <button @click="editing = true; $nextTick(() => $refs.weekInput_<%= proj.id %>.focus())" class="text-sm font-bold text-blue-700 num hover:text-blue-900 transition-colors">V.<%= proj.invoiceWeek %></button>
+                      <button @click="fetch('/api/projects/<%= proj.id %>/price', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({invoiceWeek:''}) }).then(() => location.reload())"
+                        class="text-gray-300 hover:text-red-500 transition-colors">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                       </button>
                     </span>
                   <% } else if (suggestedWeek) { %>
-                    <button
-                      class="text-xs text-blue-400 hover:text-blue-600 border border-blue-200 hover:border-blue-400 rounded px-2 py-0.5 transition-colors"
-                      hx-patch="/api/projects/<%= proj.id %>/price"
-                      hx-vals='{"invoiceWeek": "<%= suggestedWeek %>"}'
-                      hx-swap="none"
-                      hx-on::after-request="location.reload()"
-                    >
+                    <button x-show="!editing"
+                      @click="fetch('/api/projects/<%= proj.id %>/price', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({invoiceWeek:'<%= suggestedWeek %>'}) }).then(() => location.reload())"
+                      class="text-xs text-blue-400 hover:text-blue-600 border border-blue-200 hover:border-blue-400 rounded px-2 py-0.5 transition-colors">
                       V.<%= suggestedWeek %>?
                     </button>
                   <% } else if (proj.monthlyPrice) { %>
-                    <span class="text-xs text-gray-300">—</span>
+                    <button x-show="!editing" @click="editing = true; $nextTick(() => $refs.weekInput_<%= proj.id %>.focus())" class="text-xs text-gray-300 hover:text-blue-500 transition-colors">—</button>
                   <% } else { %>
-                    <span class="text-[10px] text-gray-300">Sätt pris först</span>
+                    <span x-show="!editing" class="text-[10px] text-gray-300">Sätt pris först</span>
                   <% } %>
+                    <form x-show="editing" class="flex items-center gap-1"
+                      @submit.prevent="fetch('/api/projects/<%= proj.id %>/price', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({invoiceWeek:val}) }).then(() => location.reload())">
+                      <input type="number" x-ref="weekInput_<%= proj.id %>" x-model="val" min="1" max="5"
+                        class="w-12 text-center text-sm border border-gray-200 rounded px-1 py-1 num focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        @keydown.escape="editing = false">
+                      <button type="submit" class="text-green-600 hover:text-green-800">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      </button>
+                    </form>
+                  </div>
                 </td>
 
                 <!-- Status -->
