@@ -83,10 +83,23 @@ router.post('/sync/blikk', async (req, res) => {
 // Trigger Blikk project sync
 router.post('/sync/projects', async (req, res) => {
   try {
-    const { syncBlikkProjects } = require('../services/blikk-sync');
+    const { syncBlikkProjects, syncBlikkProjectsBatch, listBlikkProjectIds } = require('../services/blikk-sync');
     const force = req.query.force === '1' || req.body.force === true;
-    const result = await syncBlikkProjects({ force });
-    res.json({ success: true, ...result });
+    const page = parseInt(req.query.page) || 0;
+    const pageSize = parseInt(req.query.pageSize) || 50;
+
+    if (force && page >= 0) {
+      // Batched force sync: fetch all IDs, then process one page
+      const allProjects = await listBlikkProjectIds();
+      const ids = allProjects.map(p => p.id);
+      const totalPages = Math.ceil(ids.length / pageSize);
+      const batch = ids.slice(page * pageSize, (page + 1) * pageSize);
+      const result = await syncBlikkProjectsBatch(batch, true);
+      res.json({ success: true, page, totalPages, total: ids.length, batchSize: batch.length, ...result });
+    } else {
+      const result = await syncBlikkProjects({ force: false });
+      res.json({ success: true, ...result });
+    }
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
