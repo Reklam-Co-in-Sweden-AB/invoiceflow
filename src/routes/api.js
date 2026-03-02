@@ -84,7 +84,8 @@ router.post('/sync/blikk', async (req, res) => {
 router.post('/sync/projects', async (req, res) => {
   try {
     const { syncBlikkProjects } = require('../services/blikk-sync');
-    const result = await syncBlikkProjects();
+    const force = req.query.force === '1' || req.body.force === true;
+    const result = await syncBlikkProjects({ force });
     res.json({ success: true, ...result });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
