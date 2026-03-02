@@ -152,6 +152,35 @@ for (let i = 0; i < 12; i++) {
           </div>
         <% } %>
 
+        <!-- References -->
+        <div class="border-t border-gray-100 pt-3 space-y-2">
+          <h4 class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Referenser</h4>
+          <div>
+            <label class="block text-[10px] text-gray-500 mb-0.5">Er referens (kontaktperson)</label>
+            <input type="text" value="<%= project.yourReference || '' %>"
+              onchange="fetch('/api/projects/<%= project.id %>/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({yourReference:this.value})}).catch(function(e){alert(e.message)})"
+              class="w-full text-xs border border-gray-200 rounded px-2 py-1.5" placeholder="Kundens kontaktperson">
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 mb-0.5">Vår referens</label>
+            <input type="text" value="<%= project.ourReference || '' %>"
+              onchange="fetch('/api/projects/<%= project.id %>/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ourReference:this.value})}).catch(function(e){alert(e.message)})"
+              class="w-full text-xs border border-gray-200 rounded px-2 py-1.5" placeholder="Vår kontaktperson">
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 mb-0.5">Er orderreferens</label>
+            <input type="text" value="<%= project.buyersOrderRef || '' %>"
+              onchange="fetch('/api/projects/<%= project.id %>/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({buyersOrderRef:this.value})}).catch(function(e){alert(e.message)})"
+              class="w-full text-xs border border-gray-200 rounded px-2 py-1.5" placeholder="Ordernr/märkning">
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 mb-0.5">Fakturatext</label>
+            <input type="text" value="<%= project.invoiceText || '' %>"
+              onchange="fetch('/api/projects/<%= project.id %>/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({invoiceText:this.value})}).catch(function(e){alert(e.message)})"
+              class="w-full text-xs border border-gray-200 rounded px-2 py-1.5" placeholder="Text på fakturan">
+          </div>
+        </div>
+
         <!-- Pause invoicing -->
         <div class="border-t border-gray-100 pt-3">
           <button @click="showPause = !showPause" class="text-xs font-semibold text-amber-600 hover:text-amber-800 flex items-center gap-1">
