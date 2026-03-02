@@ -16119,6 +16119,8 @@ export namespace Prisma {
     amount: number | null
     label: string | null
     yourReference: string | null
+    contactReference: string | null
+    ourReference: string | null
     sortOrder: number | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -16131,6 +16133,8 @@ export namespace Prisma {
     amount: number | null
     label: string | null
     yourReference: string | null
+    contactReference: string | null
+    ourReference: string | null
     sortOrder: number | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -16143,6 +16147,8 @@ export namespace Prisma {
     amount: number
     label: number
     yourReference: number
+    contactReference: number
+    ourReference: number
     sortOrder: number
     createdAt: number
     updatedAt: number
@@ -16173,6 +16179,8 @@ export namespace Prisma {
     amount?: true
     label?: true
     yourReference?: true
+    contactReference?: true
+    ourReference?: true
     sortOrder?: true
     createdAt?: true
     updatedAt?: true
@@ -16185,6 +16193,8 @@ export namespace Prisma {
     amount?: true
     label?: true
     yourReference?: true
+    contactReference?: true
+    ourReference?: true
     sortOrder?: true
     createdAt?: true
     updatedAt?: true
@@ -16197,6 +16207,8 @@ export namespace Prisma {
     amount?: true
     label?: true
     yourReference?: true
+    contactReference?: true
+    ourReference?: true
     sortOrder?: true
     createdAt?: true
     updatedAt?: true
@@ -16296,6 +16308,8 @@ export namespace Prisma {
     amount: number
     label: string | null
     yourReference: string | null
+    contactReference: string | null
+    ourReference: string | null
     sortOrder: number
     createdAt: Date
     updatedAt: Date
@@ -16327,6 +16341,8 @@ export namespace Prisma {
     amount?: boolean
     label?: boolean
     yourReference?: boolean
+    contactReference?: boolean
+    ourReference?: boolean
     sortOrder?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -16341,6 +16357,8 @@ export namespace Prisma {
     amount?: boolean
     label?: boolean
     yourReference?: boolean
+    contactReference?: boolean
+    ourReference?: boolean
     sortOrder?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -16355,6 +16373,8 @@ export namespace Prisma {
     amount?: boolean
     label?: boolean
     yourReference?: boolean
+    contactReference?: boolean
+    ourReference?: boolean
     sortOrder?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -16369,12 +16389,14 @@ export namespace Prisma {
     amount?: boolean
     label?: boolean
     yourReference?: boolean
+    contactReference?: boolean
+    ourReference?: boolean
     sortOrder?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type ProjectBillingSplitOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "projectId" | "customerId" | "amount" | "label" | "yourReference" | "sortOrder" | "createdAt" | "updatedAt", ExtArgs["result"]["projectBillingSplit"]>
+  export type ProjectBillingSplitOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "projectId" | "customerId" | "amount" | "label" | "yourReference" | "contactReference" | "ourReference" | "sortOrder" | "createdAt" | "updatedAt", ExtArgs["result"]["projectBillingSplit"]>
   export type ProjectBillingSplitInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     project?: boolean | ProjectDefaultArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
@@ -16401,6 +16423,8 @@ export namespace Prisma {
       amount: number
       label: string | null
       yourReference: string | null
+      contactReference: string | null
+      ourReference: string | null
       sortOrder: number
       createdAt: Date
       updatedAt: Date
@@ -16835,6 +16859,8 @@ export namespace Prisma {
     readonly amount: FieldRef<"ProjectBillingSplit", 'Float'>
     readonly label: FieldRef<"ProjectBillingSplit", 'String'>
     readonly yourReference: FieldRef<"ProjectBillingSplit", 'String'>
+    readonly contactReference: FieldRef<"ProjectBillingSplit", 'String'>
+    readonly ourReference: FieldRef<"ProjectBillingSplit", 'String'>
     readonly sortOrder: FieldRef<"ProjectBillingSplit", 'Int'>
     readonly createdAt: FieldRef<"ProjectBillingSplit", 'DateTime'>
     readonly updatedAt: FieldRef<"ProjectBillingSplit", 'DateTime'>
@@ -21804,6 +21830,8 @@ export namespace Prisma {
     amount: 'amount',
     label: 'label',
     yourReference: 'yourReference',
+    contactReference: 'contactReference',
+    ourReference: 'ourReference',
     sortOrder: 'sortOrder',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -23013,6 +23041,8 @@ export namespace Prisma {
     amount?: FloatFilter<"ProjectBillingSplit"> | number
     label?: StringNullableFilter<"ProjectBillingSplit"> | string | null
     yourReference?: StringNullableFilter<"ProjectBillingSplit"> | string | null
+    contactReference?: StringNullableFilter<"ProjectBillingSplit"> | string | null
+    ourReference?: StringNullableFilter<"ProjectBillingSplit"> | string | null
     sortOrder?: IntFilter<"ProjectBillingSplit"> | number
     createdAt?: DateTimeFilter<"ProjectBillingSplit"> | Date | string
     updatedAt?: DateTimeFilter<"ProjectBillingSplit"> | Date | string
@@ -23027,6 +23057,8 @@ export namespace Prisma {
     amount?: SortOrder
     label?: SortOrderInput | SortOrder
     yourReference?: SortOrderInput | SortOrder
+    contactReference?: SortOrderInput | SortOrder
+    ourReference?: SortOrderInput | SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -23044,6 +23076,8 @@ export namespace Prisma {
     amount?: FloatFilter<"ProjectBillingSplit"> | number
     label?: StringNullableFilter<"ProjectBillingSplit"> | string | null
     yourReference?: StringNullableFilter<"ProjectBillingSplit"> | string | null
+    contactReference?: StringNullableFilter<"ProjectBillingSplit"> | string | null
+    ourReference?: StringNullableFilter<"ProjectBillingSplit"> | string | null
     sortOrder?: IntFilter<"ProjectBillingSplit"> | number
     createdAt?: DateTimeFilter<"ProjectBillingSplit"> | Date | string
     updatedAt?: DateTimeFilter<"ProjectBillingSplit"> | Date | string
@@ -23058,6 +23092,8 @@ export namespace Prisma {
     amount?: SortOrder
     label?: SortOrderInput | SortOrder
     yourReference?: SortOrderInput | SortOrder
+    contactReference?: SortOrderInput | SortOrder
+    ourReference?: SortOrderInput | SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -23078,6 +23114,8 @@ export namespace Prisma {
     amount?: FloatWithAggregatesFilter<"ProjectBillingSplit"> | number
     label?: StringNullableWithAggregatesFilter<"ProjectBillingSplit"> | string | null
     yourReference?: StringNullableWithAggregatesFilter<"ProjectBillingSplit"> | string | null
+    contactReference?: StringNullableWithAggregatesFilter<"ProjectBillingSplit"> | string | null
+    ourReference?: StringNullableWithAggregatesFilter<"ProjectBillingSplit"> | string | null
     sortOrder?: IntWithAggregatesFilter<"ProjectBillingSplit"> | number
     createdAt?: DateTimeWithAggregatesFilter<"ProjectBillingSplit"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"ProjectBillingSplit"> | Date | string
@@ -24496,6 +24534,8 @@ export namespace Prisma {
     amount: number
     label?: string | null
     yourReference?: string | null
+    contactReference?: string | null
+    ourReference?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -24510,6 +24550,8 @@ export namespace Prisma {
     amount: number
     label?: string | null
     yourReference?: string | null
+    contactReference?: string | null
+    ourReference?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -24519,6 +24561,8 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    contactReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -24533,6 +24577,8 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    contactReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -24545,6 +24591,8 @@ export namespace Prisma {
     amount: number
     label?: string | null
     yourReference?: string | null
+    contactReference?: string | null
+    ourReference?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -24554,6 +24602,8 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    contactReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -24566,6 +24616,8 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    contactReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25864,6 +25916,8 @@ export namespace Prisma {
     amount?: SortOrder
     label?: SortOrder
     yourReference?: SortOrder
+    contactReference?: SortOrder
+    ourReference?: SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -25884,6 +25938,8 @@ export namespace Prisma {
     amount?: SortOrder
     label?: SortOrder
     yourReference?: SortOrder
+    contactReference?: SortOrder
+    ourReference?: SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -25896,6 +25952,8 @@ export namespace Prisma {
     amount?: SortOrder
     label?: SortOrder
     yourReference?: SortOrder
+    contactReference?: SortOrder
+    ourReference?: SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -27439,6 +27497,8 @@ export namespace Prisma {
     amount: number
     label?: string | null
     yourReference?: string | null
+    contactReference?: string | null
+    ourReference?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -27451,6 +27511,8 @@ export namespace Prisma {
     amount: number
     label?: string | null
     yourReference?: string | null
+    contactReference?: string | null
+    ourReference?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -27615,6 +27677,8 @@ export namespace Prisma {
     amount?: FloatFilter<"ProjectBillingSplit"> | number
     label?: StringNullableFilter<"ProjectBillingSplit"> | string | null
     yourReference?: StringNullableFilter<"ProjectBillingSplit"> | string | null
+    contactReference?: StringNullableFilter<"ProjectBillingSplit"> | string | null
+    ourReference?: StringNullableFilter<"ProjectBillingSplit"> | string | null
     sortOrder?: IntFilter<"ProjectBillingSplit"> | number
     createdAt?: DateTimeFilter<"ProjectBillingSplit"> | Date | string
     updatedAt?: DateTimeFilter<"ProjectBillingSplit"> | Date | string
@@ -28866,6 +28930,8 @@ export namespace Prisma {
     amount: number
     label?: string | null
     yourReference?: string | null
+    contactReference?: string | null
+    ourReference?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -28878,6 +28944,8 @@ export namespace Prisma {
     amount: number
     label?: string | null
     yourReference?: string | null
+    contactReference?: string | null
+    ourReference?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -29869,6 +29937,8 @@ export namespace Prisma {
     amount: number
     label?: string | null
     yourReference?: string | null
+    contactReference?: string | null
+    ourReference?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -30076,6 +30146,8 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    contactReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30088,6 +30160,8 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    contactReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30099,6 +30173,8 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    contactReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30655,6 +30731,8 @@ export namespace Prisma {
     amount: number
     label?: string | null
     yourReference?: string | null
+    contactReference?: string | null
+    ourReference?: string | null
     sortOrder?: number
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -30722,6 +30800,8 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    contactReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30734,6 +30814,8 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    contactReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30745,6 +30827,8 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     yourReference?: NullableStringFieldUpdateOperationsInput | string | null
+    contactReference?: NullableStringFieldUpdateOperationsInput | string | null
+    ourReference?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

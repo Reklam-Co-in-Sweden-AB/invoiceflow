@@ -373,6 +373,60 @@ async function syncVismaFinancialsMonth(year, fyIndex) {
     create: { month, type: 'pl', data, syncedAt: new Date() },
   });
 
+  // ── pl_detail: per-account breakdown with voucher texts ──
+  const plDetailGroups = {
+    intakter:         { from: 3000, to: 4000 },
+    ravaror:          { from: 4000, to: 5000 },
+    ovriga_kostnader: { from: 5000, to: 7000 },
+    personalkostnad:  { from: 7000, to: 7900 },
+    finansiella:      { from: 8000, to: 8800 },
+  };
+
+  // Collect per-account amounts, names, and voucher texts
+  const acctDetails = {}; // { accountNumber: { amount, name, texts: { text: amount } } }
+  for (const v of vouchers) {
+    const vText = (v.VoucherText || v.Description || '').trim();
+    for (const row of (v.Rows || [])) {
+      const a = row.AccountNumber;
+      if (!acctDetails[a]) acctDetails[a] = { amount: 0, name: '', texts: {} };
+      if (!acctDetails[a].name && row.AccountName) acctDetails[a].name = row.AccountName;
+      const net = (row.DebitAmount || 0) - (row.CreditAmount || 0);
+      acctDetails[a].amount += net;
+      if (vText) {
+        acctDetails[a].texts[vText] = (acctDetails[a].texts[vText] || 0) + Math.abs(net);
+      }
+    }
+  }
+
+  const detailData = {};
+  for (const [group, range] of Object.entries(plDetailGroups)) {
+    const accounts = [];
+    for (const [acctStr, info] of Object.entries(acctDetails)) {
+      const acctNum = parseInt(acctStr);
+      if (acctNum >= range.from && acctNum < range.to) {
+        // For cost accounts (4000+), amount is positive = cost; for revenue (3000-4000), flip sign
+        const isRevenue = group === 'intakter' || group === 'finansiella';
+        const amount = isRevenue ? -info.amount : info.amount;
+        if (Math.abs(amount) < 1) continue;
+        // Top 5 voucher texts by amount (with amounts)
+        const vouchers = Object.entries(info.texts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([text, amt]) => ({ text, amount: Math.round(amt) }));
+        accounts.push({ account: acctNum, name: info.name || '', amount: Math.round(amount), vouchers });
+      }
+    }
+    accounts.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+    if (accounts.length > 0) detailData[group] = accounts;
+  }
+
+  const detailJson = JSON.stringify(detailData);
+  await prisma.financialSnapshot.upsert({
+    where: { month_type: { month, type: 'pl_detail' } },
+    update: { data: detailJson, syncedAt: new Date() },
+    create: { month, type: 'pl_detail', data: detailJson, syncedAt: new Date() },
+  });
+
   return { month: month.toISOString().slice(0, 7), vouchers: vouchers.length };
 }
 

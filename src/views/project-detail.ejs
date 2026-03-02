@@ -332,16 +332,16 @@ for (let i = 0; i < 12; i++) {
 
   <!-- Billing splits -->
   <div class="card p-5" x-data="{
-    splits: <%= JSON.stringify(project.billingSplits.map(s => ({ id: s.id, customerId: s.customerId, amount: s.amount, label: s.label, yourReference: s.yourReference, showRef: !!s.yourReference, customerName: s.customer.name }))) %>,
+    splits: <%= JSON.stringify(project.billingSplits.map(s => ({ id: s.id, customerId: s.customerId, amount: s.amount, label: s.label, yourReference: s.yourReference, contactReference: s.contactReference, ourReference: s.ourReference, showRef: !!s.yourReference || !!s.contactReference || !!s.ourReference, customerName: s.customer.name }))) %>,
     splitSum() { return this.splits.reduce((s, sp) => s + sp.amount, 0); },
     async addSplit() {
       const resp = await fetch('/api/projects/<%= project.id %>/splits', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ customerId: <%= vismaCustomers.length > 0 ? vismaCustomers[0].id : 'null' %>, amount: 0 }) });
-      const s = await resp.json(); this.splits.push({ id: s.id, customerId: s.customerId, amount: s.amount, label: s.label, yourReference: s.yourReference, showRef: false, customerName: s.customer.name });
+      const s = await resp.json(); this.splits.push({ id: s.id, customerId: s.customerId, amount: s.amount, label: s.label, yourReference: s.yourReference, contactReference: s.contactReference, ourReference: s.ourReference, showRef: false, customerName: s.customer.name });
     },
     async updateSplit(id, data) {
       const resp = await fetch('/api/projects/<%= project.id %>/splits/' + id, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
       const u = await resp.json(); const sp = this.splits.find(s => s.id === id);
-      if (sp) { if (data.customerId !== undefined) { sp.customerId = Number(data.customerId); sp.customerName = u.customer.name; } if (data.amount !== undefined) sp.amount = parseFloat(data.amount); if (data.label !== undefined) sp.label = data.label || null; if (data.yourReference !== undefined) sp.yourReference = data.yourReference || null; }
+      if (sp) { if (data.customerId !== undefined) { sp.customerId = Number(data.customerId); sp.customerName = u.customer.name; } if (data.amount !== undefined) sp.amount = parseFloat(data.amount); if (data.label !== undefined) sp.label = data.label || null; if (data.yourReference !== undefined) sp.yourReference = data.yourReference || null; if (data.contactReference !== undefined) sp.contactReference = data.contactReference || null; if (data.ourReference !== undefined) sp.ourReference = data.ourReference || null; }
     },
     async deleteSplit(id) { await fetch('/api/projects/<%= project.id %>/splits/' + id, { method: 'DELETE' }); this.splits = this.splits.filter(s => s.id !== id); }
   }">
@@ -404,14 +404,31 @@ for (let i = 0; i < 12; i++) {
             <div class="flex items-center gap-2">
               <label class="flex items-center gap-1.5 cursor-pointer">
                 <input type="checkbox" class="rounded border-gray-300"
-                  :checked="split.showRef" @change="split.showRef = $event.target.checked; if(!$event.target.checked) updateSplit(split.id, { yourReference: '' })">
-                <span class="text-[10px] text-gray-500">Er orderreferens</span>
+                  :checked="split.showRef" @change="split.showRef = $event.target.checked; if(!$event.target.checked) { updateSplit(split.id, { yourReference: '', contactReference: '', ourReference: '' }); }">
+                <span class="text-[10px] text-gray-500">Referenser</span>
               </label>
-              <div x-show="split.showRef" class="flex-1">
+            </div>
+            <div x-show="split.showRef" class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-0.5">Er orderreferens</label>
                 <input type="text" :value="split.yourReference || ''"
                   @change="updateSplit(split.id, { yourReference: $event.target.value })"
                   class="w-full text-xs border border-gray-200 rounded px-2 py-1.5"
-                  placeholder="Orderreferens...">
+                  placeholder="Ordernr/märkning">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-0.5">Er referens</label>
+                <input type="text" :value="split.contactReference || ''"
+                  @change="updateSplit(split.id, { contactReference: $event.target.value })"
+                  class="w-full text-xs border border-gray-200 rounded px-2 py-1.5"
+                  placeholder="Kontaktperson">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-0.5">Vår referens</label>
+                <input type="text" :value="split.ourReference || ''"
+                  @change="updateSplit(split.id, { ourReference: $event.target.value })"
+                  class="w-full text-xs border border-gray-200 rounded px-2 py-1.5"
+                  placeholder="Vår kontaktperson">
               </div>
             </div>
           </div>
@@ -433,25 +450,10 @@ for (let i = 0; i < 12; i++) {
       </div>
     </div>
 
-    <!-- Project-level references for split projects -->
-    <div x-show="splits.length > 0" class="border-t border-gray-100 pt-3 mt-2 space-y-2">
-      <h4 class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Gemensamma referenser</h4>
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="block text-[10px] text-gray-500 mb-0.5">Er referens (kontaktperson)</label>
-          <input type="text" value="<%= project.yourReference || '' %>"
-            onchange="fetch('/api/projects/<%= project.id %>/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({yourReference:this.value})}).catch(function(e){alert(e.message)})"
-            class="w-full text-xs border border-gray-200 rounded px-2 py-1.5" placeholder="Kundens kontaktperson">
-        </div>
-        <div>
-          <label class="block text-[10px] text-gray-500 mb-0.5">Vår referens</label>
-          <input type="text" value="<%= project.ourReference || '' %>"
-            onchange="fetch('/api/projects/<%= project.id %>/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ourReference:this.value})}).catch(function(e){alert(e.message)})"
-            class="w-full text-xs border border-gray-200 rounded px-2 py-1.5" placeholder="Vår kontaktperson">
-        </div>
-      </div>
+    <!-- Project-level fakturatext for split projects -->
+    <div x-show="splits.length > 0" class="border-t border-gray-100 pt-3 mt-2">
       <div>
-        <label class="block text-[10px] text-gray-500 mb-0.5">Fakturatext</label>
+        <label class="block text-[10px] text-gray-500 mb-0.5">Fakturatext (gemensam)</label>
         <input type="text" value="<%= project.invoiceText || '' %>"
           onchange="fetch('/api/projects/<%= project.id %>/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({invoiceText:this.value})}).catch(function(e){alert(e.message)})"
           class="w-full text-xs border border-gray-200 rounded px-2 py-1.5" placeholder="Text på fakturan">

@@ -236,10 +236,12 @@ model ProjectBillingSplit {
   id          Int      @id @default(autoincrement())
   projectId   Int      @map("project_id")
   customerId  Int      @map("customer_id")
-  amount        Float
-  label         String?
-  yourReference String?  @map("your_reference")
-  sortOrder     Int      @default(0) @map("sort_order")
+  amount           Float
+  label            String?
+  yourReference    String?  @map("your_reference")       // Er orderreferens (ordernr/märkning)
+  contactReference String?  @map("contact_reference")    // Er referens (kontaktperson)
+  ourReference     String?  @map("our_reference")        // Vår referens
+  sortOrder        Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

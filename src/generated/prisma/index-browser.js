@@ -289,6 +289,8 @@ exports.Prisma.ProjectBillingSplitScalarFieldEnum = {
   amount: 'amount',
   label: 'label',
   yourReference: 'yourReference',
+  contactReference: 'contactReference',
+  ourReference: 'ourReference',
   sortOrder: 'sortOrder',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

@@ -432,9 +432,9 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
 
             const draftData = {
               CustomerId: split.customer.vismaCustomerId,
-              YourReference: project.yourReference || split.customer.yourReference || null,
+              YourReference: split.contactReference || project.yourReference || split.customer.yourReference || null,
               BuyersOrderReference: split.yourReference || project.buyersOrderRef || null,
-              OurReference: project.ourReference || split.customer.ourReference || null,
+              OurReference: split.ourReference || project.ourReference || split.customer.ourReference || null,
               InvoiceDate: now.toISOString().slice(0, 10),
               ...(project.invoiceText && { InvoiceText: project.invoiceText }),
               Rows: rows,
@@ -747,6 +747,8 @@ router.patch('/projects/:id/splits/:splitId', async (req, res) => {
   if (req.body.amount !== undefined) data.amount = parseFloat(req.body.amount);
   if (req.body.label !== undefined) data.label = req.body.label || null;
   if (req.body.yourReference !== undefined) data.yourReference = req.body.yourReference || null;
+  if (req.body.contactReference !== undefined) data.contactReference = req.body.contactReference || null;
+  if (req.body.ourReference !== undefined) data.ourReference = req.body.ourReference || null;
   const split = await prisma.projectBillingSplit.update({
     where: { id: Number(req.params.splitId) },
     data,
