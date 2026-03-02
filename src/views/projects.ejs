@@ -126,7 +126,10 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
               <% if (activeWeek === w + 1) { %><span class="text-blue-500">(nu)</span><% } %>
             </div>
             <div class="text-sm font-bold num <%= weekTotals[w] > 0 ? 'text-blue-700' : 'text-gray-300' %>"><%= formatSEK(weekTotals[w]) %></div>
-            <div class="text-[10px] mt-0.5 <%= remaining > 0 ? 'text-amber-600 font-semibold' : 'text-emerald-600' %>">
+            <% if (weekInvoicedTotals[w] > 0) { %>
+              <div class="text-[10px] mt-0.5 text-emerald-600 font-semibold"><%= formatSEK(weekInvoicedTotals[w]) %> fakturerat</div>
+            <% } %>
+            <div class="text-[10px] <%= weekInvoicedTotals[w] > 0 ? '' : 'mt-0.5 ' %><%= remaining > 0 ? 'text-amber-600 font-semibold' : 'text-emerald-600' %>">
               <% if (weekCounts[w] === 0) { %>
                 <span class="text-gray-300">Inga projekt</span>
               <% } else if (remaining > 0) { %>

@@ -156,10 +156,14 @@ router.get('/', async (req, res) => {
   // Count per week for tab badges (only due projects)
   const weekCounts = [0, 0, 0, 0];
   const weekInvoiced = [0, 0, 0, 0];
+  const weekInvoicedTotals = [0, 0, 0, 0];
   for (const p of projects) {
     if (p.invoiceWeek && effectivePrice(p) && p._isDue) {
       weekCounts[p.invoiceWeek - 1]++;
-      if (p._invoicedThisMonth) weekInvoiced[p.invoiceWeek - 1]++;
+      if (p._invoicedThisMonth) {
+        weekInvoiced[p.invoiceWeek - 1]++;
+        weekInvoicedTotals[p.invoiceWeek - 1] += effectivePrice(p);
+      }
     }
   }
 
@@ -181,6 +185,7 @@ router.get('/', async (req, res) => {
     weekTotals,
     weekCounts,
     weekInvoiced,
+    weekInvoicedTotals,
     showCompleted,
     weekFilter,
     activeWeek,
