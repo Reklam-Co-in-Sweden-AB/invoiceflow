@@ -307,6 +307,12 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
     const results = [];
     for (const project of projects) {
       try {
+        // Skip already invoiced for this month
+        if (project.lastInvoicedMonth && new Date(project.lastInvoicedMonth).getTime() >= monthStart.getTime()) {
+          results.push({ id: project.id, title: project.title, success: false, error: 'Redan fakturerad denna månad' });
+          continue;
+        }
+
         const hasSplits = project.billingSplits.length > 0;
         const hasInvoiceRows = project.invoiceRows.length > 0;
 
@@ -834,6 +840,14 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
 
     if (!project) return res.status(404).json({ success: false, error: 'Projekt hittades inte' });
 
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Prevent double-send for same month
+    if (project.lastInvoicedMonth && new Date(project.lastInvoicedMonth).getTime() >= monthStart.getTime()) {
+      return res.json({ success: false, error: 'Redan fakturerad denna månad' });
+    }
+
     const hasSplits = project.billingSplits.length > 0;
     const hasInvoiceRows = project.invoiceRows.length > 0;
 
@@ -855,10 +869,6 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
         }
       }
     }
-
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
 
     const { SpirisClient } = require('../services/spiris-client');
     const client = new SpirisClient();

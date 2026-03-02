@@ -625,6 +625,8 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
             this.bulkResult = { sent: allResults.filter(r => r.success).length, failed: allResults.filter(r => !r.success).length, results: allResults };
           }
           this.clearSelection();
+          // Reload after 3s so already-sent projects update
+          if (allResults.some(r => r.success)) setTimeout(() => location.reload(), 3000);
         } finally {
           this.sending = false;
         }
