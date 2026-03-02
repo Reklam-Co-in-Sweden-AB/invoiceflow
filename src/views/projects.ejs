@@ -245,9 +245,10 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
                   <% if (proj.invoiceWeek) { %>
                     <span x-show="!editing" class="inline-flex items-center gap-1">
                       <button @click="editing = true; $nextTick(() => $refs.weekInput_<%= proj.id %>.focus())" class="text-sm font-bold text-blue-700 num hover:text-blue-900 transition-colors">V.<%= proj.invoiceWeek %></button>
-                      <button @click="fetch('/api/projects/<%= proj.id %>/price', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({invoiceWeek:''}) }).then(() => location.reload())"
-                        class="text-gray-300 hover:text-red-500 transition-colors">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                      <button type="button"
+                        onclick="fetch('/api/projects/<%= proj.id %>/price', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({invoiceWeek:''}) }).then(function(){ location.reload() }).catch(function(e){ alert('Fel: '+e.message) })"
+                        class="text-gray-300 hover:text-red-500 transition-colors p-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                       </button>
                     </span>
                   <% } else if (suggestedWeek) { %>
