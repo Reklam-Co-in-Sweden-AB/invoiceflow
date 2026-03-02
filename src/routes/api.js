@@ -195,9 +195,11 @@ router.get('/debug/visma-draft', async (req, res) => {
 
 // Reset invoiced status for all projects (dev tool)
 router.post('/projects/reset-invoiced', async (req, res) => {
+  const now = new Date();
+  const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const result = await prisma.project.updateMany({
     where: { lastInvoicedMonth: { not: null } },
-    data: { lastInvoicedMonth: null },
+    data: { lastInvoicedMonth: null, nextInvoiceMonth: currentMonth },
   });
   res.json({ success: true, reset: result.count });
 });
