@@ -336,11 +336,10 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
               }
             }
 
-            const batchYourRef = split.yourReference || project.yourReference || split.customer.yourReference || null;
             const draftData = {
               CustomerId: split.customer.vismaCustomerId,
-              YourReference: batchYourRef,
-              BuyersOrderReference: project.buyersOrderRef || null,
+              YourReference: project.yourReference || split.customer.yourReference || null,
+              BuyersOrderReference: split.yourReference || project.buyersOrderRef || null,
               OurReference: project.ourReference || split.customer.ourReference || null,
               InvoiceDate: now.toISOString().slice(0, 10),
               ...(project.invoiceText && { InvoiceText: project.invoiceText }),
@@ -1189,14 +1188,20 @@ router.patch('/ekonomi/kpi', async (req, res) => {
 // Save budget data for a specific fiscal year month
 router.patch('/ekonomi/budget', async (req, res) => {
   try {
-    const { year, fyIndex, intakter } = req.body;
+    const { year, fyIndex, intakter, ravaror, ovriga_kostnader, personalkostnad, finansiella } = req.body;
     if (!year || fyIndex == null) return res.json({ success: false, error: 'year and fyIndex required' });
 
     const calMonth = (9 + fyIndex) % 12;
     const calYear = fyIndex < 3 ? year - 1 : year;
     const month = new Date(Date.UTC(calYear, calMonth, 1));
 
-    const data = JSON.stringify({ intakter: intakter || 0 });
+    const data = JSON.stringify({
+      intakter: intakter || 0,
+      ravaror: ravaror || 0,
+      ovriga_kostnader: ovriga_kostnader || 0,
+      personalkostnad: personalkostnad || 0,
+      finansiella: finansiella || 0,
+    });
 
     await prisma.financialSnapshot.upsert({
       where: { month_type: { month, type: 'budget' } },
@@ -1205,6 +1210,110 @@ router.patch('/ekonomi/budget', async (req, res) => {
     });
 
     res.json({ success: true });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+});
+
+// Save prognos data for a specific fiscal year month
+router.patch('/ekonomi/prognos', async (req, res) => {
+  try {
+    const { year, fyIndex, intakter, ravaror, ovriga_kostnader, personalkostnad, finansiella } = req.body;
+    if (!year || fyIndex == null) return res.json({ success: false, error: 'year and fyIndex required' });
+
+    const calMonth = (9 + fyIndex) % 12;
+    const calYear = fyIndex < 3 ? year - 1 : year;
+    const month = new Date(Date.UTC(calYear, calMonth, 1));
+
+    const data = JSON.stringify({
+      intakter: intakter || 0,
+      ravaror: ravaror || 0,
+      ovriga_kostnader: ovriga_kostnader || 0,
+      personalkostnad: personalkostnad || 0,
+      finansiella: finansiella || 0,
+    });
+
+    await prisma.financialSnapshot.upsert({
+      where: { month_type: { month, type: 'prognos' } },
+      update: { data, syncedAt: new Date() },
+      create: { month, type: 'prognos', data, syncedAt: new Date() },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+});
+
+// ── Invoice lookup from Visma ─────────────────────────────────
+router.get('/ekonomi/invoice-lookup', async (req, res) => {
+  try {
+    const { number, type } = req.query;
+    if (!number) return res.json({ success: false, error: 'Ange fakturanummer' });
+
+    const { SpirisClient } = require('../services/spiris-client');
+    const client = new SpirisClient();
+
+    let invoice = null;
+
+    if (type === 'supplier') {
+      // Search supplier invoices
+      const data = await client.get('/supplierinvoices', {
+        $filter: `InvoiceNumber eq '${number}'`,
+        $pagesize: 5,
+      });
+      const items = data.Data || data.data || data;
+      const arr = Array.isArray(items) ? items : [];
+      if (arr.length > 0) {
+        const inv = arr[0];
+        invoice = {
+          type: 'supplier',
+          number: inv.InvoiceNumber || number,
+          date: inv.InvoiceDate,
+          dueDate: inv.DueDate,
+          supplierName: inv.SupplierName || '',
+          totalAmount: inv.TotalAmount || inv.InvoiceTotal || 0,
+          currency: inv.CurrencyCode || 'SEK',
+          status: inv.Status || '',
+          rows: (inv.Rows || []).map(r => ({
+            account: r.AccountNumber,
+            text: r.Text || '',
+            amount: r.TotalAmount || r.DebitAmount || 0,
+          })),
+        };
+      }
+    } else {
+      // Search customer invoices
+      const data = await client.get('/customerinvoices', {
+        $filter: `InvoiceNumber eq '${number}'`,
+        $pagesize: 5,
+      });
+      const items = data.Data || data.data || data;
+      const arr = Array.isArray(items) ? items : [];
+      if (arr.length > 0) {
+        const inv = arr[0];
+        invoice = {
+          type: 'customer',
+          number: inv.InvoiceNumber || number,
+          date: inv.InvoiceDate,
+          dueDate: inv.DueDate,
+          customerName: inv.CustomerName || '',
+          totalAmount: inv.TotalAmountInclTax || inv.TotalAmount || 0,
+          currency: inv.CurrencyCode || 'SEK',
+          isPaid: inv.IsPaid || false,
+          rows: (inv.Rows || []).map(r => ({
+            article: r.ArticleNumber || '',
+            text: r.Text || '',
+            quantity: r.Quantity || 0,
+            unitPrice: r.UnitPrice || 0,
+            amount: r.LineTotal || 0,
+          })),
+        };
+      }
+    }
+
+    if (!invoice) return res.json({ success: false, error: 'Fakturan hittades inte' });
+    res.json({ success: true, invoice });
   } catch (error) {
     res.json({ success: false, error: error.message });
   }
