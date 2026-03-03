@@ -253,8 +253,11 @@ for (let i = 0; i < 12; i++) {
             <div class="flex justify-between mb-1">
               <span class="text-gray-500">Belopp</span>
               <% const rowsTotal = project.invoiceRows.reduce((s, r) => s + r.unitPrice * r.quantity, 0); %>
-              <span class="font-bold num"><%= project.invoiceRows.length > 0 ? formatSEK(rowsTotal) : (project.monthlyPrice ? formatSEK(project.monthlyPrice) : '—') %></span>
+              <span class="font-bold num <%= project.invoiceRows.length > 0 && rowsTotal !== (project.monthlyPrice || 0) ? 'text-amber-600' : '' %>"><%= project.invoiceRows.length > 0 ? formatSEK(rowsTotal) : (project.monthlyPrice ? formatSEK(project.monthlyPrice) : '—') %></span>
             </div>
+            <% if (project.invoiceRows.length > 0 && rowsTotal !== (project.monthlyPrice || 0)) { %>
+              <div class="text-[10px] text-amber-600 mb-1">Radsumma (<%= formatSEK(rowsTotal) %>) matchar inte pris/mån (<%= formatSEK(project.monthlyPrice || 0) %>)</div>
+            <% } %>
           <% } %>
           <% if (!project.invoiceRows.length) { %>
           <div class="flex justify-between">
