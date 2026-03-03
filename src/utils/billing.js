@@ -9,9 +9,9 @@ function effectivePrice(p) {
   if (p.billingSplits && p.billingSplits.length > 0) {
     return p.billingSplits.reduce((s, sp) => s + sp.amount, 0);
   }
-  // Main price + undertjänster (invoice rows are extras on top)
-  const multiplier = INTERVAL_MULTIPLIER[p.billingInterval] || 1;
-  const base = (p.monthlyPrice || 0) * multiplier;
+  // monthlyPrice is the per-invoice amount (already includes interval factor)
+  // extras quantities are also per-invoice (e.g. qty=3 for quarterly Cookiebot)
+  const base = p.monthlyPrice || 0;
   const extras = (p.invoiceRows || []).reduce((s, r) => s + (r.unitPrice || 0) * (r.quantity || 1), 0);
   return base + extras;
 }
