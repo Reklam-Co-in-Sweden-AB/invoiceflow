@@ -329,6 +329,7 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
             new Date(o.month).getMonth() === monthStart.getMonth()
           );
           const price = override ? override.price : project.monthlyPrice;
+          const intervalMonths = INTERVAL_MONTHS[project.billingInterval] || 1;
           const periodText = buildPeriodText(project.title, now, project.billingInterval);
 
           let vismaProjectId = null;
@@ -340,16 +341,16 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
           const rows = [];
           let totalAmount = 0;
 
-          // Main row (always included)
+          // Main row (always included, quantity = interval months)
           rows.push({
             ArticleId: project.article.vismaArticleId,
             Text: periodText,
             UnitPrice: price,
-            Quantity: 1,
+            Quantity: intervalMonths,
             LineNumber: 1,
             ...(vismaProjectId && { ProjectId: vismaProjectId }),
           });
-          totalAmount = price;
+          totalAmount = price * intervalMonths;
 
           // Extra rows (undertjänster)
           for (let i = 0; i < project.invoiceRows.length; i++) {
@@ -884,6 +885,7 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
         new Date(o.month).getMonth() === monthStart.getMonth()
       );
       const price = override ? override.price : project.monthlyPrice;
+      const intervalMonths = INTERVAL_MONTHS[project.billingInterval] || 1;
       const periodText = buildPeriodText(project.title, now, project.billingInterval);
 
       if (!project.article?.vismaArticleId) return res.json({ success: false, error: 'Ingen Visma-artikel kopplad' });
@@ -891,16 +893,16 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
       const rows = [];
       let totalAmount = 0;
 
-      // Main row (always included)
+      // Main row (always included, quantity = interval months)
       rows.push({
         ArticleId: project.article.vismaArticleId,
         Text: periodText,
         UnitPrice: price,
-        Quantity: 1,
+        Quantity: intervalMonths,
         LineNumber: 1,
         ...(vismaProjectId && { ProjectId: vismaProjectId }),
       });
-      totalAmount = price;
+      totalAmount = price * intervalMonths;
 
       // Extra rows (undertjänster)
       for (let i = 0; i < project.invoiceRows.length; i++) {

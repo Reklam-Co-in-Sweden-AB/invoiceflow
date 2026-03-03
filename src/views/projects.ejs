@@ -1,8 +1,10 @@
 <%
 function formatSEK(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+const INTERVAL_MULTIPLIER = { monthly: 1, quarterly: 3, semi_annual: 6, annual: 12 };
 function projEffectivePrice(p) {
   if (p.billingSplits && p.billingSplits.length > 0) return p.billingSplits.reduce((s, sp) => s + sp.amount, 0);
-  const base = p.monthlyPrice || 0;
+  const multiplier = INTERVAL_MULTIPLIER[p.billingInterval] || 1;
+  const base = (p.monthlyPrice || 0) * multiplier;
   const extras = (p.invoiceRows || []).reduce((s, r) => s + (r.unitPrice || 0) * (r.quantity || 1), 0);
   return base + extras;
 }

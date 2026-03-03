@@ -307,12 +307,13 @@ for (let i = 0; i < 12; i++) {
             <div class="text-xs text-gray-400">Ej faktureringsmånad</div>
           <% } else { %>
             <div x-show="!editing" @click="editing = true" class="cursor-pointer">
-              <% const mTotal = m.price ? m.price + extrasTotal : 0; %>
+              <% const mBase = m.price ? m.price * intMonths : 0; %>
+              <% const mTotal = mBase + extrasTotal; %>
               <div class="text-sm font-bold num <%= m.price ? (m.isOverride ? 'text-amber-700' : 'text-blue-700') : 'text-gray-300' %>">
                 <%= m.price ? formatSEK(mTotal) : '—' %>
               </div>
-              <% if (extrasTotal > 0 && m.price) { %>
-                <div class="text-[10px] text-gray-400 mt-0.5"><%= formatSEK(m.price) %> + <%= formatSEK(extrasTotal) %></div>
+              <% if ((intMonths > 1 || extrasTotal > 0) && m.price) { %>
+                <div class="text-[10px] text-gray-400 mt-0.5"><%= formatSEK(m.price) %> × <%= intMonths %><%= extrasTotal > 0 ? ' + ' + formatSEK(extrasTotal) : '' %></div>
               <% } %>
               <% if (m.isOverride && m.overrideNote) { %>
                 <div class="text-[10px] text-amber-600 mt-0.5"><%= m.overrideNote %></div>
