@@ -1,5 +1,5 @@
 const { PrismaClient } = require('../generated/prisma');
-const { effectivePrice, isDueForMonth, fyCalendar } = require('../utils/billing');
+const { INTERVAL_MULTIPLIER, effectivePrice, isDueForMonth, fyCalendar } = require('../utils/billing');
 
 const prisma = new PrismaClient();
 
@@ -49,7 +49,15 @@ async function calculateForecast(year) {
         return om.getFullYear() === calYear && om.getMonth() === calMonth;
       });
 
-      const amount = override ? override.price : effectivePrice(p);
+      // override.price is a monthly rate — multiply by interval + add extras
+      let amount;
+      if (override) {
+        const multiplier = INTERVAL_MULTIPLIER[p.billingInterval] || 1;
+        const extras = (p.invoiceRows || []).reduce((s, r) => s + (r.unitPrice || 0) * (r.quantity || 1), 0);
+        amount = (override.price + extras) * multiplier;
+      } else {
+        amount = effectivePrice(p);
+      }
       if (!amount) continue;
 
       const srKey = categoryToSrKey(p.category);
