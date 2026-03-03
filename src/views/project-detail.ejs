@@ -502,12 +502,13 @@ for (let i = 0; i < 12; i++) {
     </div>
 
     <!-- Main row (read-only preview) -->
-    <div class="border border-gray-100 rounded-lg p-3 mb-2 bg-gray-50/50">
+    <div class="border border-gray-100 rounded-lg p-3 mb-2 bg-gray-50/50" :class="rows.length > 0 && 'opacity-40 line-through'">
       <div class="flex items-center gap-3 text-sm">
         <span class="text-[10px] font-bold text-gray-400 uppercase w-14">Huvudrad</span>
         <span class="flex-1 font-medium text-gray-700"><%= project.article ? project.article.articleNumber + ' — ' + project.article.name : 'Ej kopplad' %></span>
         <span class="num font-semibold text-gray-900"><%= project.monthlyPrice ? formatSEK(project.monthlyPrice) : '—' %></span>
       </div>
+      <div x-show="rows.length > 0" class="text-[10px] text-amber-600 mt-1" style="text-decoration: none;">Ersätts av fakturarader nedan. Klicka "+ Huvudrad" för att inkludera.</div>
     </div>
 
     <!-- Extra rows -->
