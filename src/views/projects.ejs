@@ -225,8 +225,9 @@ const currentMonthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
                     <span class="text-sm num font-semibold text-purple-700"><%= formatSEK(projEffectivePrice(proj)) %></span>
                   <% } else { %>
                   <div class="inline-flex items-center" x-data="{ editing: false, val: '<%= proj.monthlyPrice || '' %>' }">
+                    <% const projTotal = projEffectivePrice(proj); %>
                     <button x-show="!editing" @click="editing = true; $nextTick(() => $refs.priceInput_<%= proj.id %>.focus())" class="text-sm num hover:text-blue-600 transition-colors <%= proj.monthlyPrice ? 'font-semibold text-gray-900' : 'text-gray-300 text-xs' %>">
-                      <%= proj.monthlyPrice ? formatSEK(proj.monthlyPrice) : 'Sätt pris' %>
+                      <%= projTotal ? formatSEK(projTotal) : 'Sätt pris' %>
                     </button>
                     <form x-show="editing" class="flex items-center gap-1"
                       @submit.prevent="fetch('/api/projects/<%= proj.id %>/price', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({monthlyPrice:val}) }).then(() => location.reload())">
