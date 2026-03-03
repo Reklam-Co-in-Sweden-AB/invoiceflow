@@ -252,11 +252,11 @@ for (let i = 0; i < 12; i++) {
             </div>
             <div class="flex justify-between mb-1">
               <span class="text-gray-500">Belopp</span>
-              <% const rowsTotal = project.invoiceRows.reduce((s, r) => s + r.unitPrice * r.quantity, 0); %>
-              <span class="font-bold num <%= project.invoiceRows.length > 0 && rowsTotal !== (project.monthlyPrice || 0) ? 'text-amber-600' : '' %>"><%= project.invoiceRows.length > 0 ? formatSEK(rowsTotal) : (project.monthlyPrice ? formatSEK(project.monthlyPrice) : '—') %></span>
+              <% const rowsExtra = project.invoiceRows.reduce((s, r) => s + r.unitPrice * r.quantity, 0); %>
+              <span class="font-bold num"><%= project.monthlyPrice ? formatSEK((project.monthlyPrice || 0) + rowsExtra) : '—' %></span>
             </div>
-            <% if (project.invoiceRows.length > 0 && rowsTotal !== (project.monthlyPrice || 0)) { %>
-              <div class="text-[10px] text-amber-600 mb-1">Radsumma (<%= formatSEK(rowsTotal) %>) matchar inte pris/mån (<%= formatSEK(project.monthlyPrice || 0) %>)</div>
+            <% if (rowsExtra > 0) { %>
+              <div class="text-[10px] text-gray-400 mb-1"><%= formatSEK(project.monthlyPrice || 0) %> + <%= formatSEK(rowsExtra) %> undertjänster</div>
             <% } %>
           <% } %>
           <% if (!project.invoiceRows.length) { %>
@@ -467,7 +467,7 @@ for (let i = 0; i < 12; i++) {
   <!-- Invoice rows -->
   <div class="card p-5" x-data="{
     rows: <%= JSON.stringify(project.invoiceRows.map(r => ({ id: r.id, articleId: r.articleId, text: r.text, unitPrice: r.unitPrice, quantity: r.quantity }))) %>,
-    totalAmount() { const rowSum = this.rows.reduce((s, r) => s + r.unitPrice * r.quantity, 0); return this.rows.length > 0 ? rowSum : <%= project.monthlyPrice || 0 %>; },
+    totalAmount() { return <%= project.monthlyPrice || 0 %> + this.rows.reduce((s, r) => s + r.unitPrice * r.quantity, 0); },
     async addRow(preset) {
       const body = preset || { text: '', unitPrice: 0, quantity: 1 };
       const resp = await fetch('/api/projects/<%= project.id %>/rows', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
@@ -482,33 +482,21 @@ for (let i = 0; i < 12; i++) {
     <div class="flex items-center justify-between mb-4">
       <div>
         <h3 class="text-sm font-bold text-gray-900">Fakturarader</h3>
-        <p class="text-xs text-gray-400">Rader som skickas till Visma. Om rader finns används dessa istället för huvudraden.</p>
+        <p class="text-xs text-gray-400">Huvudraden skickas alltid. Undertjänster nedan läggs till på fakturan.</p>
       </div>
-      <div class="flex items-center gap-1">
-        <% if (project.article) { %>
-          <button onclick="
-            fetch('/api/projects/<%= project.id %>/rows', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ articleId: <%= project.article.id %>, text: '<%= project.article.name.replace(/'/g, "\\'") %>', unitPrice: <%= project.monthlyPrice || 0 %>, quantity: 1 }) })
-            .then(function(r) { return r.json(); }).then(function() { location.reload(); })
-          " class="btn btn-ghost text-xs">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            + Huvudrad
-          </button>
-        <% } %>
-        <button @click="addRow()" class="btn btn-ghost text-xs">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-          + Rad
-        </button>
-      </div>
+      <button @click="addRow()" class="btn btn-ghost text-xs">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        Lägg till undertjänst
+      </button>
     </div>
 
-    <!-- Main row (read-only preview) -->
-    <div class="border border-gray-100 rounded-lg p-3 mb-2 bg-gray-50/50" :class="rows.length > 0 && 'opacity-40 line-through'">
+    <!-- Main row (always sent) -->
+    <div class="border border-blue-100 rounded-lg p-3 mb-2 bg-blue-50/30">
       <div class="flex items-center gap-3 text-sm">
-        <span class="text-[10px] font-bold text-gray-400 uppercase w-14">Huvudrad</span>
+        <span class="text-[10px] font-bold text-blue-500 uppercase w-14">Huvudrad</span>
         <span class="flex-1 font-medium text-gray-700"><%= project.article ? project.article.articleNumber + ' — ' + project.article.name : 'Ej kopplad' %></span>
         <span class="num font-semibold text-gray-900"><%= project.monthlyPrice ? formatSEK(project.monthlyPrice) : '—' %></span>
       </div>
-      <div x-show="rows.length > 0" class="text-[10px] text-amber-600 mt-1" style="text-decoration: none;">Ersätts av fakturarader nedan. Klicka "+ Huvudrad" för att inkludera.</div>
     </div>
 
     <!-- Extra rows -->
