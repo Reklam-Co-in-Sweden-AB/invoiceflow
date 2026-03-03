@@ -9,12 +9,11 @@ function effectivePrice(p) {
   if (p.billingSplits && p.billingSplits.length > 0) {
     return p.billingSplits.reduce((s, sp) => s + sp.amount, 0);
   }
-  // Invoice rows replace the main row
-  if (p.invoiceRows && p.invoiceRows.length > 0) {
-    return p.invoiceRows.reduce((s, r) => s + (r.unitPrice || 0) * (r.quantity || 1), 0);
-  }
+  // Main price + undertjänster (invoice rows are extras on top)
   const multiplier = INTERVAL_MULTIPLIER[p.billingInterval] || 1;
-  return (p.monthlyPrice || 0) * multiplier;
+  const base = (p.monthlyPrice || 0) * multiplier;
+  const extras = (p.invoiceRows || []).reduce((s, r) => s + (r.unitPrice || 0) * (r.quantity || 1), 0);
+  return base + extras;
 }
 
 /**

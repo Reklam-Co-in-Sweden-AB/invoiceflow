@@ -6,6 +6,9 @@ function monthLabel(d) { const dt = new Date(d); return monthNames[dt.getMonth()
 const intervalLabels = { monthly: 'Månadsvis', quarterly: 'Kvartalsvis', semi_annual: 'Halvårsvis', annual: 'Årsvis' };
 const intervalMonths = { monthly: 1, quarterly: 3, semi_annual: 6, annual: 12 };
 
+// Sum of undertjänster (invoice rows) — added on top of base price in overview
+const extrasTotal = (project.invoiceRows || []).reduce((s, r) => s + r.unitPrice * r.quantity, 0);
+
 // Build upcoming 12 months for price overview
 const upcoming = [];
 const now = new Date();
@@ -304,9 +307,13 @@ for (let i = 0; i < 12; i++) {
             <div class="text-xs text-gray-400">Ej faktureringsmånad</div>
           <% } else { %>
             <div x-show="!editing" @click="editing = true" class="cursor-pointer">
+              <% const mTotal = m.price ? m.price + extrasTotal : 0; %>
               <div class="text-sm font-bold num <%= m.price ? (m.isOverride ? 'text-amber-700' : 'text-blue-700') : 'text-gray-300' %>">
-                <%= m.price ? formatSEK(m.price) : '—' %>
+                <%= m.price ? formatSEK(mTotal) : '—' %>
               </div>
+              <% if (extrasTotal > 0 && m.price) { %>
+                <div class="text-[10px] text-gray-400 mt-0.5"><%= formatSEK(m.price) %> + <%= formatSEK(extrasTotal) %></div>
+              <% } %>
               <% if (m.isOverride && m.overrideNote) { %>
                 <div class="text-[10px] text-amber-600 mt-0.5"><%= m.overrideNote %></div>
               <% } %>
