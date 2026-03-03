@@ -6,8 +6,8 @@ function monthLabel(d) { const dt = new Date(d); return monthNames[dt.getMonth()
 const intervalLabels = { monthly: 'Månadsvis', quarterly: 'Kvartalsvis', semi_annual: 'Halvårsvis', annual: 'Årsvis' };
 const intervalMonths = { monthly: 1, quarterly: 3, semi_annual: 6, annual: 12 };
 
-// Sum of undertjänster (invoice rows) — added on top of base price in overview
-const extrasTotal = (project.invoiceRows || []).reduce((s, r) => s + r.unitPrice * r.quantity, 0);
+// Sum of undertjänster (per month) — multiplied by interval in display
+const extrasPerMonth = (project.invoiceRows || []).reduce((s, r) => s + r.unitPrice * r.quantity, 0);
 
 // Build upcoming 12 months for price overview
 const upcoming = [];
@@ -256,10 +256,11 @@ for (let i = 0; i < 12; i++) {
             <div class="flex justify-between mb-1">
               <span class="text-gray-500">Belopp</span>
               <% const rowsExtra = project.invoiceRows.reduce((s, r) => s + r.unitPrice * r.quantity, 0); %>
-              <span class="font-bold num"><%= project.monthlyPrice ? formatSEK((project.monthlyPrice || 0) + rowsExtra) : '—' %></span>
+              <% const invoiceTotal = ((project.monthlyPrice || 0) + rowsExtra) * intMonths; %>
+              <span class="font-bold num"><%= project.monthlyPrice ? formatSEK(invoiceTotal) : '—' %></span>
             </div>
-            <% if (rowsExtra > 0) { %>
-              <div class="text-[10px] text-gray-400 mb-1"><%= formatSEK(project.monthlyPrice || 0) %> + <%= formatSEK(rowsExtra) %> undertjänster</div>
+            <% if (rowsExtra > 0 || intMonths > 1) { %>
+              <div class="text-[10px] text-gray-400 mb-1">(<%= formatSEK(project.monthlyPrice || 0) %><%= rowsExtra > 0 ? ' + ' + formatSEK(rowsExtra) : '' %>) × <%= intMonths %></div>
             <% } %>
           <% } %>
           <% if (!project.invoiceRows.length) { %>
@@ -308,12 +309,13 @@ for (let i = 0; i < 12; i++) {
           <% } else { %>
             <div x-show="!editing" @click="editing = true" class="cursor-pointer">
               <% const mBase = m.price ? m.price * intMonths : 0; %>
-              <% const mTotal = mBase + extrasTotal; %>
+              <% const mExtras = extrasPerMonth * intMonths; %>
+              <% const mTotal = mBase + mExtras; %>
               <div class="text-sm font-bold num <%= m.price ? (m.isOverride ? 'text-amber-700' : 'text-blue-700') : 'text-gray-300' %>">
                 <%= m.price ? formatSEK(mTotal) : '—' %>
               </div>
-              <% if ((intMonths > 1 || extrasTotal > 0) && m.price) { %>
-                <div class="text-[10px] text-gray-400 mt-0.5"><%= formatSEK(m.price) %> × <%= intMonths %><%= extrasTotal > 0 ? ' + ' + formatSEK(extrasTotal) : '' %></div>
+              <% if ((intMonths > 1 || mExtras > 0) && m.price) { %>
+                <div class="text-[10px] text-gray-400 mt-0.5">(<%= formatSEK(m.price) %> + <%= formatSEK(extrasPerMonth) %>) × <%= intMonths %></div>
               <% } %>
               <% if (m.isOverride && m.overrideNote) { %>
                 <div class="text-[10px] text-amber-600 mt-0.5"><%= m.overrideNote %></div>
@@ -475,7 +477,7 @@ for (let i = 0; i < 12; i++) {
   <!-- Invoice rows -->
   <div class="card p-5" x-data="{
     rows: <%= JSON.stringify(project.invoiceRows.map(r => ({ id: r.id, articleId: r.articleId, text: r.text, unitPrice: r.unitPrice, quantity: r.quantity }))) %>,
-    totalAmount() { return <%= project.monthlyPrice || 0 %> + this.rows.reduce((s, r) => s + r.unitPrice * r.quantity, 0); },
+    totalAmount() { return (<%= project.monthlyPrice || 0 %> + this.rows.reduce((s, r) => s + r.unitPrice * r.quantity, 0)) * <%= intMonths %>; },
     async addRow(preset) {
       const body = preset || { text: '', unitPrice: 0, quantity: 1 };
       const resp = await fetch('/api/projects/<%= project.id %>/rows', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });

@@ -318,6 +318,8 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
         const hasSplits = project.billingSplits.length > 0;
         if (!project.article?.vismaArticleId) { results.push({ id: project.id, title: project.title, success: false, error: 'Ingen Visma-artikel kopplad' }); continue; }
 
+        const intervalMonths = INTERVAL_MONTHS[project.billingInterval] || 1;
+
         if (!hasSplits) {
           // --- Standard single-invoice path ---
           if (!project.monthlyPrice) { results.push({ id: project.id, title: project.title, success: false, error: 'Inget pris satt' }); continue; }
@@ -329,7 +331,6 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
             new Date(o.month).getMonth() === monthStart.getMonth()
           );
           const price = override ? override.price : project.monthlyPrice;
-          const intervalMonths = INTERVAL_MONTHS[project.billingInterval] || 1;
           const periodText = buildPeriodText(project.title, now, project.billingInterval);
 
           let vismaProjectId = null;
@@ -352,20 +353,21 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
           });
           totalAmount = price * intervalMonths;
 
-          // Extra rows (undertjänster)
+          // Extra rows (undertjänster — quantity multiplied by interval)
           for (let i = 0; i < project.invoiceRows.length; i++) {
             const ir = project.invoiceRows[i];
             const artId = ir.article?.vismaArticleId || project.article?.vismaArticleId;
             if (!artId) { results.push({ id: project.id, title: project.title, success: false, error: `Rad "${ir.text}" saknar Visma-artikel` }); continue; }
+            const qty = ir.quantity * intervalMonths;
             rows.push({
               ArticleId: artId,
               Text: ir.text,
               UnitPrice: ir.unitPrice,
-              Quantity: ir.quantity,
+              Quantity: qty,
               LineNumber: i + 2,
               ...(vismaProjectId && { ProjectId: vismaProjectId }),
             });
-            totalAmount += ir.unitPrice * ir.quantity;
+            totalAmount += ir.unitPrice * qty;
           }
 
           const draftData = {
@@ -423,15 +425,16 @@ router.post('/projects/bulk-send-to-visma', async (req, res) => {
               for (let i = 0; i < project.invoiceRows.length; i++) {
                 const ir = project.invoiceRows[i];
                 const artId = ir.article?.vismaArticleId || project.article.vismaArticleId;
+                const qty = ir.quantity * intervalMonths;
                 rows.push({
                   ArticleId: artId,
                   Text: ir.text,
                   UnitPrice: ir.unitPrice,
-                  Quantity: ir.quantity,
+                  Quantity: qty,
                   LineNumber: i + 2,
                   ...(vismaProjectId && { ProjectId: vismaProjectId }),
                 });
-                totalExtra += ir.unitPrice * ir.quantity;
+                totalExtra += ir.unitPrice * qty;
               }
             }
 
@@ -878,6 +881,8 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
       if (vismaProject) vismaProjectId = vismaProject.Id || vismaProject.id;
     }
 
+    const intervalMonths = INTERVAL_MONTHS[project.billingInterval] || 1;
+
     if (!hasSplits) {
       // --- Original single-invoice path ---
       const override = project.priceOverrides.find(o =>
@@ -885,7 +890,6 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
         new Date(o.month).getMonth() === monthStart.getMonth()
       );
       const price = override ? override.price : project.monthlyPrice;
-      const intervalMonths = INTERVAL_MONTHS[project.billingInterval] || 1;
       const periodText = buildPeriodText(project.title, now, project.billingInterval);
 
       if (!project.article?.vismaArticleId) return res.json({ success: false, error: 'Ingen Visma-artikel kopplad' });
@@ -904,20 +908,21 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
       });
       totalAmount = price * intervalMonths;
 
-      // Extra rows (undertjänster)
+      // Extra rows (undertjänster — quantity multiplied by interval)
       for (let i = 0; i < project.invoiceRows.length; i++) {
         const ir = project.invoiceRows[i];
         const artId = ir.article?.vismaArticleId || project.article?.vismaArticleId;
         if (!artId) return res.json({ success: false, error: `Fakturarad "${ir.text}" saknar Visma-artikel` });
+        const qty = ir.quantity * intervalMonths;
         rows.push({
           ArticleId: artId,
           Text: ir.text,
           UnitPrice: ir.unitPrice,
-          Quantity: ir.quantity,
+          Quantity: qty,
           LineNumber: i + 2,
           ...(vismaProjectId && { ProjectId: vismaProjectId }),
         });
-        totalAmount += ir.unitPrice * ir.quantity;
+        totalAmount += ir.unitPrice * qty;
       }
 
       const draftData = {
@@ -961,21 +966,22 @@ router.post('/projects/:id/send-to-visma', async (req, res) => {
           ...(vismaProjectId && { ProjectId: vismaProjectId }),
         });
 
-        // Extra invoice rows only on the first split
+        // Extra invoice rows only on the first split (quantity × interval)
         let totalExtra = 0;
         if (si === 0) {
           for (let i = 0; i < project.invoiceRows.length; i++) {
             const ir = project.invoiceRows[i];
             const artId = ir.article?.vismaArticleId || project.article.vismaArticleId;
+            const qty = ir.quantity * intervalMonths;
             rows.push({
               ArticleId: artId,
               Text: ir.text,
               UnitPrice: ir.unitPrice,
-              Quantity: ir.quantity,
+              Quantity: qty,
               LineNumber: i + 2,
               ...(vismaProjectId && { ProjectId: vismaProjectId }),
             });
-            totalExtra += ir.unitPrice * ir.quantity;
+            totalExtra += ir.unitPrice * qty;
           }
         }
 

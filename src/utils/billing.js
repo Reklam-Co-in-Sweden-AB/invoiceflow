@@ -9,11 +9,10 @@ function effectivePrice(p) {
   if (p.billingSplits && p.billingSplits.length > 0) {
     return p.billingSplits.reduce((s, sp) => s + sp.amount, 0);
   }
-  // monthlyPrice = monthly rate, multiply by interval for per-invoice total
-  // extras quantities are set per-invoice by user (e.g. qty=3 for quarterly)
+  // All values are per-month, multiply by interval for per-invoice total
   const multiplier = INTERVAL_MULTIPLIER[p.billingInterval] || 1;
   const base = (p.monthlyPrice || 0) * multiplier;
-  const extras = (p.invoiceRows || []).reduce((s, r) => s + (r.unitPrice || 0) * (r.quantity || 1), 0);
+  const extras = (p.invoiceRows || []).reduce((s, r) => s + (r.unitPrice || 0) * (r.quantity || 1), 0) * multiplier;
   return base + extras;
 }
 
